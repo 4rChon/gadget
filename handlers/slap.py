@@ -20,9 +20,9 @@ slapMsgs = ["slaps {0} around a bit with a large trout.",
             "touches {0} inappropriately with a chair leg",
 ]
 try:
-    target = sys.argv[1] or os.environ["SKYPE_NAME"]
+    target = sys.argv[1] or os.environ["NAME"]
 except:
-    target = os.environ["SKYPE_NAME"]
+    target = os.environ["NAME"]
 
 print ("/me %s" % (random.choice(slapMsgs),)).format(target)
 
