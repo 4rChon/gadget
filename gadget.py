@@ -265,6 +265,14 @@ class Handlers(object):
         running = False
         restart = True
     
+    def handle_quit(self, cmd, args, environ):
+        global running
+        
+        if not environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME:
+            return "You are unauthorized!"
+        
+        running = False
+    
 if __name__ == "__main__":
     handlers = Handlers()
     skype = SkypeBot()
