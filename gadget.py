@@ -6,6 +6,7 @@ import sys
 import glob
 import string
 import random
+import code
 
 import Skype4Py as skype4py
 from twisted.internet import protocol, reactor
@@ -38,6 +39,9 @@ restart = False
 skype = irc = handlers = None
 
 def send_message(message, exclude=None):
+    if type(message) is unicode:
+        message = message.encode("utf-8")
+    
     if exclude != skype:
         skype.send_message(message)
     
@@ -51,21 +55,29 @@ class SkypeBot(object):
     def __init__(self):
         self.skype = skype4py.Skype(Transport='x11')
         self.skype.FriendlyName = "Gadget"
-        self.tavern = self.skype.Chats[0]
+        self.tavern = self.find_chat()
         
         self.skype.Attach()
         
         self.skype.OnMessageStatus = self.message_handler
     
+    def find_chat(self):
+        for chat in self.skype.Chats:
+            if "yop.lit.ein" in chat._Handle:
+                continue
+            else:
+                return chat
+        
+        raise Exception("Unable to find tavern!")
+    
     def message_handler(self, msg, status):
         if status == skype4py.cmsReceived:
             if msg.Type == skype4py.cmeEmoted:
-                send_message("[Skype] *\x02%s\x02 %s*" % (msg.FromDisplayName.replace("\u202e", "").encode("UTF-8"),
-                                                  msg.Body.encode("UTF-8")), skype)
+                send_message("[Skype] *\x02%s\x02 %s*" % (msg.FromDisplayName.replace("\u202e", ""), msg.Body), skype)
                 
                 return
             else:
-                send_message("[Skype] \x02%s\x02: %s" % (msg.FromDisplayName.encode("UTF-8"), msg.Body.encode("UTF-8")), skype)
+                send_message("[Skype] \x02%s\x02: %s" % (msg.FromDisplayName, msg.Body), skype)
             
             if msg.Body.startswith("!"):
                 args = msg.Body.split(" ")
@@ -251,10 +263,12 @@ class Handlers(object):
         if not os.path.exists("handlers/%s.py" % (cmd,)):
             return "Don't know how to %s" % (cmd,)
         
-        proc = subprocess.Popen(("python handlers/%s.py %s" % (cmd, " ".join(args))).split(" "),
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                env=environ)
+        if len(args) > 0:
+            cmdline = "python handlers/%s.py %s" % (cmd, " ".join(args))
+        else:
+            cmdline = "python handlers/%s.py" % (cmd,)
+        
+        proc = subprocess.Popen(cmdline.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ)
         
         return proc.stdout.read() + proc.stderr.read()
     
@@ -310,6 +324,12 @@ class Handlers(object):
             return self.auth_failure()
         
         running = False
+    
+    def handle_interpreter(self, cmd, args, environ):
+        if not environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME:
+            return self.auth_failure()
+        
+        code.interact(local=globals())
     
 if __name__ == "__main__":
     handlers = Handlers()
