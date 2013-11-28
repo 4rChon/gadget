@@ -5,12 +5,33 @@ import os
 import sys
 import glob
 import string
+import random
 
 import Skype4Py as skype4py
 from twisted.internet import protocol, reactor
 from twisted.words.protocols.irc import IRCClient
 
 ADMINISTRATOR_NAME = "mr.angry"
+AUTH_FAILURE_MESSAGES = [
+    "I am a strong black woman who don't need no man",
+    "no",
+    "lol",
+    "ok, I'll get right on that",
+    "how about no?",
+    "maybe tomorrow",
+    "I don't like your face, so no",
+]
+PLS_MESSAGES = [
+    "NO!",
+    "it wasn't me",
+    "shitty programming?",
+    "this is all Yop's fault, I swear!",
+    "oops",
+    "pls urself",
+    "no!",
+    "nyet",
+    "nein",
+]
 
 running = True
 restart = False
@@ -21,7 +42,7 @@ def send_message(message, exclude=None):
         skype.send_message(message)
     
     if exclude != irc:
-        if len(message.split("\n")) < 25:
+        if len(message) < 1500:
             irc.send_message(message)
         else:
             irc.send_message("error: output too long")
@@ -39,12 +60,12 @@ class SkypeBot(object):
     def message_handler(self, msg, status):
         if status == skype4py.cmsReceived:
             if msg.Type == skype4py.cmeEmoted:
-                send_message("[Skype] *%s %s*" % (msg.FromDisplayName.replace("\u202e", "").encode("UTF-8"),
+                send_message("[Skype] *\x02%s\x02 %s*" % (msg.FromDisplayName.replace("\u202e", "").encode("UTF-8"),
                                                   msg.Body.encode("UTF-8")), skype)
                 
                 return
             else:
-                send_message("[Skype] %s: %s" % (msg.FromDisplayName.encode("UTF-8"), msg.Body.encode("UTF-8")), skype)
+                send_message("[Skype] \x02%s\x02: %s" % (msg.FromDisplayName.encode("UTF-8"), msg.Body.encode("UTF-8")), skype)
             
             if msg.Body.startswith("!"):
                 args = msg.Body.split(" ")
@@ -60,6 +81,8 @@ class SkypeBot(object):
                 
                 if result:
                     send_message(result)
+            else:
+                handlers.general(self, msg.FromDisplayName, msg.Body)
     
     def send_message(self, message):
         self.tavern.SendMessage(message)
@@ -107,21 +130,19 @@ class IrcBot(IRCClient):
         self.join(self.factory.channel)
     
     def noticed(self, user, channel, message):
-        print user, channel, message
+        pass #print user, channel, message
     
     def privmsg(self, user, channel, message, action=False):
-        print user, channel, message
-        
         #no privmsgs pls
         if channel == self.factory.channel:
             name = user.split("!")[0]
             
             if action:
-                send_message("[IRC] *%s %s*" % (name, message), irc)
+                send_message("[IRC] *\x02%s\x02 %s*" % (name, message), irc)
                 
                 return
             else:
-                send_message("[IRC] %s: %s" % (name, message), irc)
+                send_message("[IRC] \x02%s\x02: %s" % (name, message), irc)
             
             if message.startswith("!"):
                 args = message.split(" ")
@@ -136,6 +157,8 @@ class IrcBot(IRCClient):
                 
                 if result:
                     send_message(result)
+            else:
+                handlers.general(self.factory, user, message)
     
     def action(self, user, channel, message):
         self.privmsg(user, channel, message, True)
@@ -235,6 +258,21 @@ class Handlers(object):
         
         return proc.stdout.read() + proc.stderr.read()
     
+    def auth_failure(self):
+        return random.choice(AUTH_FAILURE_MESSAGES)
+    
+    #receives every message
+    def general(self, _, user, message):
+        if   "gadget" == message.lower():
+            send_message("sus")
+        elif all([x in message.lower() for x in ["gadget", "pls"]]): #GADGET PLS
+            send_message(random.choice(PLS_MESSAGES))
+        elif "gadget" in message.lower():
+            randChars = [chr(x) for x in range(ord('a'), ord('z'))]
+            
+            random.shuffle(randChars)
+            send_message("".join(randChars))
+    
     def handle_help(self, cmd, args, environ):
         """!help [command name]\nShows you help n' stuff."""
         
@@ -260,7 +298,7 @@ class Handlers(object):
         global running, restart
         
         if not environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME:
-            return "You are unauthorized!"
+            return self.auth_failure()
         
         running = False
         restart = True
@@ -269,7 +307,7 @@ class Handlers(object):
         global running
         
         if not environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME:
-            return "You are unauthorized!"
+            return self.auth_failure()
         
         running = False
     
