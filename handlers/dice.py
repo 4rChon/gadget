@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 A dice roll module
@@ -16,8 +15,11 @@ def to_int(s):
     try:
         v = int(s)
     except ValueError:
-        print '{} is not an integer.'.format(s)
-        sys.exit(1)
+        try:
+            v = int(s, 36)
+        except:
+            print '{} is not an integer.'.format(s)
+            sys.exit(1)
 
     return v
 
@@ -49,9 +51,9 @@ def main(args):
     if cmd == 'help':
         print 'Usage:'
         print '       !dice [sides]'
-        print '       !dice [min] [max]'
-        print '       !dice uniform [min] [max]'
-        print '       !dice gauss [mu] [sigma]'
+        print '       !dice [max | min max]'
+        print '       !dice uniform [max | min max]'
+        print '       !dice gauss [sigma | mu sigma]'
         return
     elif cmd == 'uniform':
 
