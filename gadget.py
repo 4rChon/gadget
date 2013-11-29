@@ -7,6 +7,7 @@ import glob
 import string
 import random
 import code
+import signal
 
 import Skype4Py as skype4py
 from twisted.internet import protocol, reactor
@@ -41,6 +42,8 @@ skype = irc = handlers = None
 def send_message(message, exclude=None):
     if type(message) is unicode:
         message = message.encode("utf-8")
+    else:
+        message = message.encode("latin-1")
     
     if exclude != skype:
         skype.send_message(message)
@@ -197,6 +200,7 @@ class IrcFactory(protocol.ClientFactory):
     def __init__(self, nick, host, port, channel):
         self.nick = nick
         self.channel = channel
+        self.client = None
         
         self.reactor_step()
         reactor.connectTCP(host, port, self)
@@ -227,6 +231,9 @@ class IrcFactory(protocol.ClientFactory):
         reactor.callLater(16000, lambda: connector.connect())
     
     def send_message(self, message):
+        if not self.client:
+            return
+        
         if message.startswith("/"):
             args = message.split(" ")
             cmd = args[0][1:]
@@ -274,6 +281,9 @@ class Handlers(object):
     
     def auth_failure(self):
         return random.choice(AUTH_FAILURE_MESSAGES)
+    
+    def sighup(self, signum, frame):
+        self.handle_reload(None, None, {"SKYPE_HANDLE": ADMINISTRATOR_NAME})
     
     #receives every message
     def general(self, _, user, message):
@@ -335,6 +345,8 @@ if __name__ == "__main__":
     handlers = Handlers()
     skype = SkypeBot()
     irc = IrcFactory("Gadget", "localhost", 6667, "#tavern")
+    
+    signal.signal(signal.SIGHUP, handlers.sighup)
     
     reactor.run()
     
