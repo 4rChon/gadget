@@ -17,4 +17,5 @@ except thefuckingweather.LocationError:
     
     raise SystemExit
 
-print (u"{0} {1}°. {2} ({3})".format(data["location"], current["temperature"], " ".join(current["weather"]), current["remark"])).encode("utf-8")
+#print (u"{0} {1}°. {2} ({3})".format(data["location"], current["temperature"], " ".join(current["weather"]), current["remark"])).encode("utf-8")
+print (u"{1} ({0}°) ({2})".format(current["temperature"], " ".join(current["weather"]), current["remark"])).encode("utf-8")
