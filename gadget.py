@@ -58,18 +58,21 @@ def send_message(message, exclude=None):
 class SkypeBot(object):
     def __init__(self):
         self.skype = skype4py.Skype(Transport='x11')
+        self.skype.Timeout = 5000
         self.skype.FriendlyName = "Gadget"
-        self.tavern = self.find_chat()
         
         self.attach()
-        
-        self.skype.OnMessageStatus = self.message_handler
     
     def attach(self):
         global retry
         
+        print "Attempting to attach to skype"
+        
         try:
             self.skype.Attach()
+            
+            self.tavern = self.find_chat()
+            self.skype.OnMessageStatus = self.message_handler
         except skype4py.errors.SkypeAPIError:
             retry = True
     
@@ -220,7 +223,7 @@ class IrcFactory(protocol.ClientFactory):
         if running:
             if retry:
                 retry = False
-                
+                                
                 skype.attach()
             
             reactor.callLater(1, self.reactor_step)
