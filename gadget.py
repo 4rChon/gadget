@@ -387,7 +387,7 @@ class Handlers(object):
         
         proc = subprocess.Popen("/usr/bin/git pull origin master".split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
-        reactor.callLater(500, lambda: self.handle_reload(None, None, environ))
+        reactor.callLater(1, lambda: self.handle_reload(None, None, environ))
         
         return proc.stdout.read() + proc.stderr.read()
     
