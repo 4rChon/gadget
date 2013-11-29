@@ -316,6 +316,9 @@ class Handlers(object):
     def auth_failure(self):
         return random.choice(AUTH_FAILURE_MESSAGES)
     
+    def check_auth(self, environ):
+        return environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME
+    
     def sighup(self, signum, frame):
         self.handle_reload(None, None, {"SKYPE_HANDLE": ADMINISTRATOR_NAME})
     
@@ -355,7 +358,7 @@ class Handlers(object):
     def handle_reload(self, cmd, args, environ):
         global running, restart
         
-        if not environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME:
+        if not self.is_authed(environ):
             return self.auth_failure()
         
         running = False
@@ -364,16 +367,26 @@ class Handlers(object):
     def handle_quit(self, cmd, args, environ):
         global running
         
-        if not environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME:
+        if not self.is_authed(environ):
             return self.auth_failure()
         
         running = False
     
     def handle_interpreter(self, cmd, args, environ):
-        if not environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME:
+        if not self.is_authed(environ):
             return self.auth_failure()
         
         code.interact(local=globals())
+    
+    def handle_pull(self, cmd, args, environ):
+        if not self.is_authed(environ):
+            return self.auth_failure()
+        
+        proc = subprocess.Popen("git pull origin master")
+        
+        reactor.callLater(500, lambda: self.handle_reload(None, None, environ))
+        
+        return proc.stdout.read() + proc.stderr.read()
     
 if __name__ == "__main__":
     handlers = Handlers()
