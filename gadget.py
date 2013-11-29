@@ -382,7 +382,7 @@ class Handlers(object):
         if not self.is_authed(environ):
             return self.auth_failure()
         
-        proc = subprocess.Popen("git pull origin master")
+        proc = subprocess.Popen("git pull origin master", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         reactor.callLater(500, lambda: self.handle_reload(None, None, environ))
         
