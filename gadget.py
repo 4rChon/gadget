@@ -35,6 +35,21 @@ PLS_MESSAGES = [
     "nein",
 ]
 
+realStdout = sys.stdout
+realStderr = sys.stderr
+
+def make_replacement(file):
+    class wrapper(object):
+        @staticmethod
+        def write(*args):
+            file.write(*args)
+            file.flush()
+    
+    return wrapper()
+
+sys.stdout = make_replacement(realStdout)
+sys.stderr = make_replacement(realStderr)
+
 running = True
 restart = False
 retry = False
