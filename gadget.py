@@ -215,6 +215,8 @@ class IrcFactory(protocol.ClientFactory):
         reactor.connectTCP(host, port, self)
     
     def reactor_step(self):
+        global retry
+        
         if running:
             if retry:
                 retry = False
