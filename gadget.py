@@ -37,6 +37,7 @@ PLS_MESSAGES = [
 
 running = True
 restart = False
+retry = False
 skype = irc = handlers = None
 
 def send_message(message, exclude=None):
@@ -60,9 +61,17 @@ class SkypeBot(object):
         self.skype.FriendlyName = "Gadget"
         self.tavern = self.find_chat()
         
-        self.skype.Attach()
+        self.attach()
         
         self.skype.OnMessageStatus = self.message_handler
+    
+    def attach(self):
+        global retry
+        
+        try:
+            self.skype.Attach()
+        except skype4py.errors.SkypeAPIError:
+            retry = True
     
     def find_chat(self):
         for chat in self.skype.Chats:
@@ -207,6 +216,11 @@ class IrcFactory(protocol.ClientFactory):
     
     def reactor_step(self):
         if running:
+            if retry:
+                retry = False
+                
+                skype.attach()
+            
             reactor.callLater(1, self.reactor_step)
         else:
             print "Reloading..."
