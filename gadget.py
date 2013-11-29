@@ -56,6 +56,9 @@ retry = False
 skype = irc = handlers = None
 
 def send_message(message, exclude=None):
+    if any([ord(char) > 127 for char in message]):
+        message = message.decode("UTF-8")
+    
     if type(message) is unicode:
         message = message.encode("utf-8")
     else:
