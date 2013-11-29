@@ -316,7 +316,7 @@ class Handlers(object):
     def auth_failure(self):
         return random.choice(AUTH_FAILURE_MESSAGES)
     
-    def check_auth(self, environ):
+    def is_authed(self, environ):
         return environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME
     
     def sighup(self, signum, frame):
