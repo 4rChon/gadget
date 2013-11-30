@@ -15,7 +15,7 @@ from twisted.words.protocols.irc import IRCClient
 from twisted.cred import portal as Portal, checkers
 from twisted.conch import manhole, manhole_ssh
 
-ADMINISTRATOR_NAME = "mr.angry"
+ADMINISTRATOR_NAMES = ["mr.angry", "goppend"]
 ADMINISTRATOR_PASSWORD = "password!"
 AUTH_FAILURE_MESSAGES = [
     "I am a strong black woman who don't need no man",
@@ -363,6 +363,9 @@ class Handlers(object):
         else:
             cmdline = "python handlers/%s.py" % (cmd,)
         
+        if type(environ["NAME"]) == unicode:
+            environ["NAME"] = environ["NAME"].encode("utf-8")
+        
         proc = subprocess.Popen(cmdline.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ)
         
         return proc.stdout.read() + proc.stderr.read()
@@ -371,10 +374,10 @@ class Handlers(object):
         return random.choice(AUTH_FAILURE_MESSAGES)
     
     def is_authed(self, environ):
-        return environ.get("SKYPE_HANDLE", None) == ADMINISTRATOR_NAME
+        return environ.get("SKYPE_HANDLE", None) in ADMINISTRATOR_NAMES
     
     def sighup(self, signum, frame):
-        self.handle_reload(None, None, {"SKYPE_HANDLE": ADMINISTRATOR_NAME})
+        self.handle_reload(None, None, {"SKYPE_HANDLE": ADMINISTRATOR_NAMES[0]})
     
     def translate_sus(self, name):
         for test, result in SUS_TRANSLATIONS.iteritems():
