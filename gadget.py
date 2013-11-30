@@ -56,13 +56,11 @@ retry = False
 skype = irc = handlers = None
 
 def send_message(message, exclude=None):
-    if type(message) is str and any([ord(char) > 127 for char in message]):
-        message = message.decode("utf-8")
+    #if type(message) is str and any([ord(char) > 127 for char in message]):
+    #    message = message.decode("utf-8")
     
     if type(message) is unicode:
         message = message.encode("utf-8")
-    else:
-        message = message.encode("latin-1")
     
     if exclude != skype:
         skype.send_message(message)
