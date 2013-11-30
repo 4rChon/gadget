@@ -462,6 +462,8 @@ class Handlers(object):
     #def handle_clear(self, )
     
 def main():
+    global handlers, skype, irc
+    
     handlers = Handlers()
     skype = SkypeBot()
     irc = IrcFactory("Gadget", "localhost", 6667, "#tavern")
