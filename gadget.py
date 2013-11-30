@@ -12,8 +12,11 @@ import signal
 import Skype4Py as skype4py
 from twisted.internet import protocol, reactor
 from twisted.words.protocols.irc import IRCClient
+from twisted.cred import portal as Portal, checkers
+from twisted.conch import manhole, manhole_ssh
 
 ADMINISTRATOR_NAME = "mr.angry"
+ADMINISTRATOR_PASSWORD = "password!"
 AUTH_FAILURE_MESSAGES = [
     "I am a strong black woman who don't need no man",
     "no",
@@ -279,15 +282,33 @@ class IrcFactory(protocol.ClientFactory):
         if message.startswith("/"):
             args = message.split(" ")
             cmd = args[0][1:]
+            joined = " ".join(args[1:]).replace("\n", "")
             
-            if cmd.lower() == "topic":
-                self.client.topic(self.channel, " ".join(args[1:]).replace("\n", ""))
+            if cmd.lower() in "topic":
+                self.client.topic(self.channel, joined)
                 
-                return;
+                return
+            elif cmd.lower() == "me":
+                self.client.me(self.channel, joined)
+                
+                return
             
             self.client.send_command(cmd, *(args[1:]))
         else:
             self.client.say(self.channel, message)
+
+class Echoer(protocol.DatagramProtocol):
+    def datagramReceived(self, data, (host, port)):
+        send_message(data)
+
+def manhole_factory(globals):
+    realm = manhole_ssh.TerminalRealm()
+    realm.chainedProtocolFactory.protocolFactory = lambda x: manhole.Manhole(globals)
+    portal = Portal.Portal(realm)
+    
+    portal.registerChecker(checkers.InMemoryUsernamePasswordDatabaseDontUse(root=ADMINISTRATOR_PASSWORD))
+    
+    return manhole_ssh.ConchFactory(portal)
 
 class Handlers(object):
     def __init__(self):
@@ -410,13 +431,16 @@ class Handlers(object):
         
         return proc.stdout.read() + proc.stderr.read()
     
+    #def handle_clear(self, )
+    
 if __name__ == "__main__":
     handlers = Handlers()
     skype = SkypeBot()
     irc = IrcFactory("Gadget", "localhost", 6667, "#tavern")
     
     signal.signal(signal.SIGHUP, handlers.sighup)
-    
+    reactor.listenUDP(0, Echoer())
+    reactor.listenTCP(0, manhole_factory(globals()))
     reactor.run()
     
     if restart:
