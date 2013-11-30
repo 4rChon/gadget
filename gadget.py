@@ -153,7 +153,7 @@ class SkypeBot(object):
             else:
                 handlers.general(self, msg.FromDisplayName, msg.Body)
             
-            Status.set(Status.normal)
+            reactor.callLater(1, lambda: Status.set(Status.normal))
     
     def send_message(self, message):
         self.tavern.SendMessage(message)
@@ -236,7 +236,7 @@ class IrcBot(IRCClient):
             else:
                 handlers.general(self.factory, user, message)
             
-            Status.set(Status.normal)
+            reactor.callLater(1, lambda: Status.set(Status.normal))
     
     def action(self, user, channel, message):
         self.privmsg(user, channel, message, True)
