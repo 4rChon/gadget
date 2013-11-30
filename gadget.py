@@ -38,14 +38,14 @@ PLS_MESSAGES = [
     "nein",
 ]
 SUS_TRANSLATIONS = {
-    (lambda name: "goppend" in name): ["gopsus", "hi goppend", "heil goppend"],
-    (lambda name: "centipede" in name): ["susipede", "centisus", "shouldn't you be at the bakery?"],
-    (lambda name: "KEEEAAGGH" in name): ["kegsus", "sus keg", "where the hell is micronesia?"],
-    (lambda name: "Administrator" in name): ["zekesus", "sus zekin"],
-    (lambda name: "RimShooter" in name): ["rimsus", "susshooter", "ramshoot", "ramscoop", "rimjob mcbimbob", "riddle diddle jim jam"],
-    (lambda name: "Ben" in name): ["benson", "bensus", "bendy sus\nBENDY! BENDY!! BENDY! BENDY!!"],
-    (lambda name: "Yoplitein" in name): ["yopsus", "yop is fgt"],
-    (lambda name: "Reign" in name): ["reigny sus", "sus reign", "it's reigning sus", "it's reigning men"],
+    "goppend": ["gopsus", "hi goppend", "heil goppend"],
+    "centipede": ["susipede", "centisus", "shouldn't you be at the bakery?"],
+    "KEEEAAGGH": ["kegsus", "sus keg", "where the hell is micronesia?"],
+    "Administrator": ["zekesus", "sus zekin"],
+    "RimShooter": ["rimsus", "susshooter", "ramshoot", "ramscoop", "rimjob mcbimbob", "riddle diddle jim jam"],
+    "Ben": ["benson", "bensus", "bendy sus\nBENDY! BENDY!! BENDY! BENDY!!"],
+    "Yoplitein": ["yopsus", "yop is fgt"],
+    "Reign": ["reigny sus", "sus reign", "it's reigning sus", "it's reigning men"],
 }
 
 class Status(object):
@@ -381,7 +381,7 @@ class Handlers(object):
     
     def translate_sus(self, name):
         for test, result in SUS_TRANSLATIONS.iteritems():
-            if test(name):
+            if test in name:
                 return random.choice(result)
         
         return None
@@ -461,7 +461,7 @@ class Handlers(object):
     
     #def handle_clear(self, )
     
-if __name__ == "__main__":
+def main():
     handlers = Handlers()
     skype = SkypeBot()
     irc = IrcFactory("Gadget", "localhost", 6667, "#tavern")
@@ -475,3 +475,6 @@ if __name__ == "__main__":
         sys.argv[0] = os.path.abspath(sys.argv[0])
         
         os.execv("/usr/bin/env", ["env", "python"] + sys.argv)
+
+if __name__ == '__main__':
+    main()
