@@ -104,11 +104,11 @@ class SkypeBot(object):
     def message_handler(self, msg, status):
         if status == skype4py.cmsReceived:
             if msg.Type == skype4py.cmeEmoted:
-                send_message("[Skype] *\x02%s\x02 %s*" % (msg.FromDisplayName.replace("\u202e", ""), msg.Body), skype)
+                send_message(u"[Skype] *\x02%s\x02\u202d %s*" % (msg.FromDisplayName.replace("\u202e", ""), msg.Body), skype)
                 
                 return
             else:
-                send_message("[Skype] \x02%s\x02: %s" % (msg.FromDisplayName, msg.Body), skype)
+                send_message(u"[Skype] \x02%s\x02\u202d: %s" % (msg.FromDisplayName, msg.Body), skype)
             
             if msg.Body.startswith("!"):
                 args = msg.Body.split(" ")
@@ -181,11 +181,11 @@ class IrcBot(IRCClient):
             name = user.split("!")[0]
             
             if action:
-                send_message("[IRC] *\x02%s\x02 %s*" % (name, message), irc)
+                send_message(u"[IRC] *\x02%s\x02\u202d %s*" % (name, message), irc)
                 
                 return
             else:
-                send_message("[IRC] \x02%s\x02: %s" % (name, message), irc)
+                send_message(u"[IRC] \x02%s\x02\u202d: %s" % (name, message), irc)
             
             if message.startswith("!"):
                 args = message.split(" ")
