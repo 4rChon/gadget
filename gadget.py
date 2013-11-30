@@ -34,6 +34,15 @@ PLS_MESSAGES = [
     "nyet",
     "nein",
 ]
+SUS_TRANSLATIONS = {
+    (lambda name: "goppend" in name): ["gopsus", "hi goppend", "heil goppend"],
+    (lambda name: "centipede" in name): ["susipede", "centisus", "shouldn't you be at the bakery?"],
+    (lambda name: "KEEEAAGGH" in name): ["kegsus", "sus keg", "where the hell is micronesia?"],
+    (lambda name: "Administrator" in name): ["zekesus", "sus zekin"],
+    (lambda name: "RimShooter" in name): ["rimsus", "susshooter", "ramshoot", "ramscoop", "rimjob mcbimbob", "riddle diddle jim jam"],
+    (lambda name: "Ben" in name): ["benson", "bensus", "bendy sus\nBENDY! BENDY!! BENDY! BENDY!!"],
+    (lambda name: "Yoplitein" in name): ["yopsus", "yop is fgt"],
+}
 
 realStdout = sys.stdout
 realStderr = sys.stderr
@@ -56,9 +65,6 @@ retry = False
 skype = irc = handlers = None
 
 def send_message(message, exclude=None):
-    #if type(message) is str and any([ord(char) > 127 for char in message]):
-    #    message = message.decode("utf-8")
-    
     if type(message) is unicode:
         message = message.encode("utf-8")
     
@@ -323,10 +329,24 @@ class Handlers(object):
     def sighup(self, signum, frame):
         self.handle_reload(None, None, {"SKYPE_HANDLE": ADMINISTRATOR_NAME})
     
+    def translate_sus(self, name):
+        for test, result in SUS_TRANSLATIONS.iteritems():
+            if test(name):
+                return random.choice(result)
+        
+        return None
+    
     #receives every message
     def general(self, _, user, message):
         if   "gadget" == message.lower():
             send_message("sus")
+        elif "sus" == message.lower():
+            msg = self.translate_sus(user)
+            
+            if msg:
+                send_message(msg)
+            else:
+                send_message("sus %s" % (user,))
         elif all([x in message.lower() for x in ["gadget", "pls"]]): #GADGET PLS
             send_message(random.choice(PLS_MESSAGES))
         elif "gadget" in message.lower():
