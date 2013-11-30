@@ -1,3 +1,9 @@
 #!/usr/bin/env python
+import sys
 
-print "I sell propane and propane accessories."
+item = "propane"
+
+if len(sys.argv) > 1:
+    item = sys.argv[1:]
+
+print "I sell {0} and {0} accessories.".format(item)
