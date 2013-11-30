@@ -349,11 +349,11 @@ class Handlers(object):
                 send_message("sus %s" % (user,))
         elif all([x in message.lower() for x in ["gadget", "pls"]]): #GADGET PLS
             send_message(random.choice(PLS_MESSAGES))
-        elif "gadget" in message.lower():
-            randChars = [chr(x) for x in range(ord('a'), ord('z'))]
-            
-            random.shuffle(randChars)
-            send_message("".join(randChars))
+        #elif "gadget" in message.lower():
+        #    randChars = [chr(x) for x in range(ord('a'), ord('z'))]
+        #    
+        #    random.shuffle(randChars)
+        #    send_message("".join(randChars))
     
     def handle_help(self, cmd, args, environ):
         """!help [command name]\nShows you help n' stuff."""
