@@ -48,16 +48,6 @@ SUS_TRANSLATIONS = {
     "Reign": ["reigny sus", "sus reign", "it's reigning sus", "it's reigning men"],
 }
 
-class Status(object):
-    normal = skype4py.cusOnline
-    busy = skype4py.cusDoNotDisturb
-    waiting = skype4py.cusAway
-    invisible = skype4py.cusInvisible
-    
-    @staticmethod
-    def set(status):
-        skype.skype.ChangeUserStatus(status)
-
 realStdout = sys.stdout
 realStderr = sys.stderr
 
@@ -91,7 +81,47 @@ def send_message(message, exclude=None):
         else:
             irc.send_message("error: output too long")
 
+def manhole_factory(globals):
+    realm = manhole_ssh.TerminalRealm()
+    realm.chainedProtocolFactory.protocolFactory = lambda x: manhole.Manhole(globals)
+    portal = Portal.Portal(realm)
+    
+    portal.registerChecker(checkers.InMemoryUsernamePasswordDatabaseDontUse(root=ADMINISTRATOR_PASSWORD))
+    
+    return manhole_ssh.ConchFactory(portal)
+
+def main():
+    global handlers, skype, irc
+    
+    handlers = Handlers()
+    skype = SkypeBot()
+    irc = IrcFactory("Gadget", "localhost", 6667, "#tavern")
+    
+    signal.signal(signal.SIGHUP, handlers.sighup)
+    reactor.listenUDP(0, Echoer())
+    reactor.listenTCP(0, manhole_factory(globals()))
+    reactor.run()
+    
+    if restart:
+        sys.argv[0] = os.path.abspath(sys.argv[0])
+        
+        os.execv("/usr/bin/env", ["env", "python"] + sys.argv)
+
+class Status(object):
+    """Skype4Py aliases."""
+    
+    normal = skype4py.cusOnline
+    busy = skype4py.cusDoNotDisturb
+    waiting = skype4py.cusAway
+    invisible = skype4py.cusInvisible
+    
+    @staticmethod
+    def set(status):
+        skype.skype.ChangeUserStatus(status)
+
 class SkypeBot(object):
+    """Skype API handler."""
+    
     def __init__(self):
         self.skype = skype4py.Skype(Transport='x11')
         self.skype.Timeout = 5000
@@ -159,43 +189,11 @@ class SkypeBot(object):
         self.tavern.SendMessage(message)
 
 class IrcBot(IRCClient):
+    """IRC protocol manager."""
+    
     def __init__(self, factory):
         self.factory = factory
         self.nickname = self.factory.nick
-    
-    #def connectionMade(self):
-    #    IRCClient.connectionMade(self)
-    
-    #I have no idea why this isn't included in IRCClient
-    #(stolen from http://twistedmatrix.com/trac/browser/tags/releases/twisted-8.2.0/twisted/words/protocols/irc.py#L123)
-    def send_command(self, command, *parameter_list, **prefix):
-        """Send a line formatted as an IRC message.
-
-        First argument is the command, all subsequent arguments
-        are parameters to that command.  If a prefix is desired,
-        it may be specified with the keyword argument 'prefix'.
-        """
-
-        if not command:
-            raise ValueError, "IRC message requires a command. (" + repr(command) + ")"
-
-        if ' ' in command or command[0] == ':':
-            # Not the ONLY way to screw up, but provides a little
-            # sanity checking to catch likely dumb mistakes.
-            raise ValueError, "Somebody screwed up, 'cuz this doesn't" \
-                  " look like a command to me: %s" % command
-
-        line = string.join([command] + list(parameter_list))
-        if prefix.has_key('prefix'):
-            line = ":%s %s" % (prefix['prefix'], line)
-        
-        print line
-        
-        self.sendLine(line)
-
-        if len(parameter_list) > 15:
-            log.msg("Message has %d parameters (RFC allows 15):\n%s" %
-                    (len(parameter_list), line))
     
     def signedOn(self):
         self.join(self.factory.channel)
@@ -260,6 +258,8 @@ class IrcBot(IRCClient):
             send_message("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason), irc)
 
 class IrcFactory(protocol.ClientFactory):
+    """IRC connection manager."""
+    
     def __init__(self, nick, host, port, channel):
         self.nick = nick
         self.channel = channel
@@ -269,6 +269,8 @@ class IrcFactory(protocol.ClientFactory):
         reactor.connectTCP(host, port, self)
     
     def reactor_step(self):
+        """Run every second by the reactor. Handles changes in running/retry."""
+        
         global retry
         
         if running:
@@ -284,19 +286,19 @@ class IrcFactory(protocol.ClientFactory):
             reactor.stop()
     
     def buildProtocol(self, addr):
-        print "Connection made"
+        print "[IRC] Connection made"
         
         self.client = IrcBot(self)
         
         return self.client
     
     def clientConnectionLost(self, connector, reason):
-        print "Connection lost"
+        print "[IRC] Connection lost"
         
         connector.connect()
     
     def clientConnectionFailed(self, connector, reason):
-        print "Connection failed"
+        print "[IRC] Connection failed"
         
         reactor.callLater(16000, lambda: connector.connect())
     
@@ -311,31 +313,22 @@ class IrcFactory(protocol.ClientFactory):
             
             if cmd.lower() in "topic":
                 self.client.topic(self.channel, joined)
-                
-                return
             elif cmd.lower() == "me":
                 self.client.me(self.channel, joined)
-                
-                return
-            
-            self.client.send_command(cmd, *(args[1:]))
+            else:
+                print "[IRC] Error: don't know how to %s" % (cmd,)
         else:
             self.client.say(self.channel, message)
 
 class Echoer(protocol.DatagramProtocol):
+    """Listens for datagrams, and sends them as messages."""
+    
     def datagramReceived(self, data, (host, port)):
         send_message(data)
 
-def manhole_factory(globals):
-    realm = manhole_ssh.TerminalRealm()
-    realm.chainedProtocolFactory.protocolFactory = lambda x: manhole.Manhole(globals)
-    portal = Portal.Portal(realm)
-    
-    portal.registerChecker(checkers.InMemoryUsernamePasswordDatabaseDontUse(root=ADMINISTRATOR_PASSWORD))
-    
-    return manhole_ssh.ConchFactory(portal)
-
 class Handlers(object):
+    """Source-agnostic message handlers."""
+    
     def __init__(self):
         self.handlers = {}
         
@@ -345,6 +338,8 @@ class Handlers(object):
         return self.handlers[value]
     
     def init_handlers(self):
+        """Assembles list of handlers in code and in handlers/"""
+        
         for member in dir(self):
             if member.startswith("handle_"):
                 self.handlers.update({member.split("handle_")[1]: getattr(self, member)})
@@ -355,6 +350,8 @@ class Handlers(object):
             self.handlers.update({file: self.run_handler})
     
     def run_handler(self, cmd, args, environ):
+        """Runs a handler script."""
+        
         if not os.path.exists("handlers/%s.py" % (cmd,)):
             return "Don't know how to %s" % (cmd,)
         
@@ -370,7 +367,7 @@ class Handlers(object):
         
         return proc.stdout.read() + proc.stderr.read()
     
-    def auth_failure(self):
+    def get_auth_failure_msg(self):
         return random.choice(AUTH_FAILURE_MESSAGES)
     
     def is_authed(self, environ):
@@ -380,14 +377,19 @@ class Handlers(object):
         self.handle_reload(None, None, {"SKYPE_HANDLE": ADMINISTRATOR_NAMES[0]})
     
     def translate_sus(self, name):
+        """Figure out what to say when someone says 'sus'"""
+        
         for test, result in SUS_TRANSLATIONS.iteritems():
             if test in name:
                 return random.choice(result)
         
         return None
     
-    #receives every message
+    #handlers
+    
     def general(self, _, user, message):
+        """Receives every message."""
+        
         if   "gadget" == message.lower():
             send_message("sus")
         elif "sus" == message.lower():
@@ -430,7 +432,7 @@ class Handlers(object):
         global running, restart
         
         if not self.is_authed(environ):
-            return self.auth_failure()
+            return self.get_auth_failure_msg()
         
         running = False
         restart = True
@@ -439,19 +441,13 @@ class Handlers(object):
         global running
         
         if not self.is_authed(environ):
-            return self.auth_failure()
+            return self.get_auth_failure_msg()
         
         running = False
     
-    def handle_interpreter(self, cmd, args, environ):
-        if not self.is_authed(environ):
-            return self.auth_failure()
-        
-        code.interact(local=globals())
-    
     def handle_pull(self, cmd, args, environ):
         if not self.is_authed(environ):
-            return self.auth_failure()
+            return self.get_auth_failure_msg()
         
         proc = subprocess.Popen("/usr/bin/git pull origin master".split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
@@ -460,23 +456,6 @@ class Handlers(object):
         return proc.stdout.read() + proc.stderr.read()
     
     #def handle_clear(self, )
-    
-def main():
-    global handlers, skype, irc
-    
-    handlers = Handlers()
-    skype = SkypeBot()
-    irc = IrcFactory("Gadget", "localhost", 6667, "#tavern")
-    
-    signal.signal(signal.SIGHUP, handlers.sighup)
-    reactor.listenUDP(0, Echoer())
-    reactor.listenTCP(0, manhole_factory(globals()))
-    reactor.run()
-    
-    if restart:
-        sys.argv[0] = os.path.abspath(sys.argv[0])
-        
-        os.execv("/usr/bin/env", ["env", "python"] + sys.argv)
 
 if __name__ == '__main__':
     main()
