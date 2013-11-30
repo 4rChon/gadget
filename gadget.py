@@ -48,6 +48,16 @@ SUS_TRANSLATIONS = {
     (lambda name: "Reign" in name): ["reigny sus", "sus reign", "it's reigning sus", "it's reigning men"],
 }
 
+class Status(object):
+    normal = skype4py.cusOnline
+    busy = skype4py.cusDoNotDisturb
+    waiting = skype4py.cusAway
+    invisible = skype4py.cusInvisible
+    
+    @staticmethod
+    def set(status):
+        skype.skype.ChangeUserStatus(status)
+
 realStdout = sys.stdout
 realStderr = sys.stderr
 
@@ -86,6 +96,7 @@ class SkypeBot(object):
         self.skype = skype4py.Skype(Transport='x11')
         self.skype.Timeout = 5000
         self.skype.FriendlyName = "Gadget"
+        self.skype.Settings.AutoAway = False
         
         self.attach()
     
@@ -120,7 +131,10 @@ class SkypeBot(object):
             else:
                 send_message(u"[Skype] \x02%s\x02\u202d: %s" % (msg.FromDisplayName, msg.Body), skype)
             
+            
             if msg.Body.startswith("!"):
+                Status.set(Status.busy)
+                
                 args = msg.Body.split(" ")
                 cmd = args[0][1:].lower()
                 environ = os.environ.copy()
@@ -128,6 +142,8 @@ class SkypeBot(object):
                 environ["SKYPE_HANDLE"] = msg.FromHandle
                 
                 try:
+                    Status.set(Status.waiting)
+                    
                     result = handlers[cmd](cmd, args[1:], environ)
                 except KeyError:
                     result = "No such command"
@@ -136,6 +152,8 @@ class SkypeBot(object):
                     send_message(result)
             else:
                 handlers.general(self, msg.FromDisplayName, msg.Body)
+            
+            Status.set(Status.normal)
     
     def send_message(self, message):
         self.tavern.SendMessage(message)
@@ -197,13 +215,18 @@ class IrcBot(IRCClient):
             else:
                 send_message(u"[IRC] \x02%s\x02\u202d: %s" % (name, message), irc)
             
+            
             if message.startswith("!"):
+                Status.set(Status.busy)
+                
                 args = message.split(" ")
                 cmd = args[0][1:].lower()
                 environ = os.environ.copy()
                 environ["NAME"] = name
                 
                 try:
+                    Status.set(Status.waiting)
+                    
                     result = handlers[cmd](cmd, args[1:], environ)
                 except KeyError:
                     result = "No such command"
@@ -212,6 +235,8 @@ class IrcBot(IRCClient):
                     send_message(result)
             else:
                 handlers.general(self.factory, user, message)
+            
+            Status.set(Status.normal)
     
     def action(self, user, channel, message):
         self.privmsg(user, channel, message, True)
