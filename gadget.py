@@ -42,6 +42,7 @@ SUS_TRANSLATIONS = {
     (lambda name: "RimShooter" in name): ["rimsus", "susshooter", "ramshoot", "ramscoop", "rimjob mcbimbob", "riddle diddle jim jam"],
     (lambda name: "Ben" in name): ["benson", "bensus", "bendy sus\nBENDY! BENDY!! BENDY! BENDY!!"],
     (lambda name: "Yoplitein" in name): ["yopsus", "yop is fgt"],
+    (lambda name: "Reign" in name): ["reigny sus", "sus reign", "it's reigning sus", "it's reigning men"],
 }
 
 realStdout = sys.stdout
