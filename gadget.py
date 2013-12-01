@@ -314,7 +314,7 @@ class IrcFactory(protocol.ClientFactory):
             if cmd.lower() in "topic":
                 self.client.topic(self.channel, joined)
             elif cmd.lower() == "me":
-                self.client.me(self.channel, joined)
+                self.client.action(self.channel, joined)
             else:
                 print "[IRC] Error: don't know how to %s" % (cmd,)
         else:
