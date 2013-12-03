@@ -365,7 +365,7 @@ class SvenChatFactory(protocol.ClientFactory):
         if type(message) is unicode:
             message = message.encode("utf-8")
         
-        self.client.sendLine(message)
+        self.client.sendLine("< " + message)
 
 class Handlers(object):
     """Source-agnostic message handlers."""
