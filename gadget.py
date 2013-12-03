@@ -11,6 +11,7 @@ import signal
 
 import Skype4Py as skype4py
 from twisted.internet import protocol, reactor
+from twisted.protocols import basic
 from twisted.words.protocols.irc import IRCClient
 from twisted.cred import portal as Portal, checkers
 from twisted.conch import manhole, manhole_ssh
@@ -66,7 +67,7 @@ sys.stderr = make_replacement(realStderr)
 running = True
 restart = False
 retry = False
-skype = irc = handlers = None
+skype = irc = sven = handlers = None
 
 def send_message(message, exclude=None):
     if type(message) is unicode:
@@ -90,14 +91,33 @@ def manhole_factory(globals):
     
     return manhole_ssh.ConchFactory(portal)
 
+def reactor_step():
+    """Run every second by the reactor. Handles changes in running/retry."""
+    
+    global retry
+    
+    if running:
+        if retry:
+            retry = False
+                            
+            skype.attach()
+        
+        reactor.callLater(1, reactor_step)
+    else:
+        print "Reloading..."
+        
+        reactor.stop()
+
 def main():
-    global handlers, skype, irc
+    global handlers, skype, irc, sven
     
     handlers = Handlers()
     skype = SkypeBot()
     irc = IrcFactory("Gadget", "localhost", 6667, "#tavern")
+    sven = SvenChatFactory("localhost", 65530)
     
     signal.signal(signal.SIGHUP, handlers.sighup)
+    reactor_step()
     reactor.listenUDP(0, Echoer())
     reactor.listenTCP(0, manhole_factory(globals()))
     reactor.run()
@@ -265,25 +285,7 @@ class IrcFactory(protocol.ClientFactory):
         self.channel = channel
         self.client = None
         
-        self.reactor_step()
         reactor.connectTCP(host, port, self)
-    
-    def reactor_step(self):
-        """Run every second by the reactor. Handles changes in running/retry."""
-        
-        global retry
-        
-        if running:
-            if retry:
-                retry = False
-                                
-                skype.attach()
-            
-            reactor.callLater(1, self.reactor_step)
-        else:
-            print "Reloading..."
-            
-            reactor.stop()
     
     def buildProtocol(self, addr):
         print "[IRC] Connection made"
@@ -325,6 +327,42 @@ class Echoer(protocol.DatagramProtocol):
     
     def datagramReceived(self, data, (host, port)):
         send_message(data)
+
+class SvenChat(basic.LineReceiver):
+    def __init__(self, factory):
+        self.delimiter = "\n"
+        self.factory = factory
+    
+    def connectionMade(self):
+        self.sendLine("hello Gadget")
+    
+    def lineReceived(self, line):
+        if line.startswith("<"):
+            send_message(line)
+
+class SvenChatFactory(protocol.ClientFactory):
+    def __init__(self, host, port):
+        reactor.connectTCP(host, port, self)
+    
+    def buildProtocol(self, addr):
+        print "[GC] Connection made"
+        
+        self.client = SvenChat(self)
+        
+        return self.client
+    
+    def clientConnectionLost(self, connector, reason):
+        print "[GC] Connection lost"
+        
+        connector.connect()
+    
+    def clientConnectionFailed(self, connector, reason):
+        print "[GC] Connection failed"
+        
+        reactor.callLater(16000, lambda: connector.connect())
+    
+    def send_message(self, message):
+        self.client.sendLine(message)
 
 class Handlers(object):
     """Source-agnostic message handlers."""
@@ -455,7 +493,8 @@ class Handlers(object):
         
         return proc.stdout.read() + proc.stderr.read()
     
-    #def handle_clear(self, )
+    def handle_gc(self, cmd, args, environ):
+        sven.send_message("%s: %s" % (environ[NAME], " ".join(args))
 
 if __name__ == '__main__':
     main()
