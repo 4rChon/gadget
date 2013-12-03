@@ -496,6 +496,12 @@ class Handlers(object):
         
         return proc.stdout.read() + proc.stderr.read()
     
+    def handle_topic(self, cmd, args, environ):
+        if not self.is_authed(environ):
+            return self.get_auth_failure_msg()
+        
+        send_message("/topic The %s Tavern" % (" ".join(args),))
+    
     def handle_gc(self, cmd, args, environ):
         sven.send_message("%s: %s" % (environ[NAME], " ".join(args))
 
