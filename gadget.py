@@ -362,6 +362,9 @@ class SvenChatFactory(protocol.ClientFactory):
         reactor.callLater(16000, lambda: connector.connect())
     
     def send_message(self, message):
+        if type(message) is unicode:
+            message = message.encode("utf-8")
+        
         self.client.sendLine(message)
 
 class Handlers(object):
