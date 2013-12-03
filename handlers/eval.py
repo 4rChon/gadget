@@ -3,7 +3,7 @@ from __future__ import print_function
 import sys
 
 #useful stuff
-import math, random, time
+import math, random, time, struct
 
 args = " ".join(sys.argv[1:])
 printMode = True
@@ -12,6 +12,7 @@ environ = {
     "math": math,
     "random": random,
     "time": time,
+    "struct": struct,
     "print": print,
     "range": xrange,
     "dir": dir,
