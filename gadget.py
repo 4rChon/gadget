@@ -1,53 +1,18 @@
-import pdb
-import time
+import sys
 import subprocess
 import os
-import sys
 import glob
-import string
 import random
-import code
 import signal
+import traceback
 
 import Skype4Py as skype4py
 from twisted.internet import protocol, reactor
+from twisted.internet.task import LoopingCall
 from twisted.protocols import basic
 from twisted.words.protocols.irc import IRCClient
 from twisted.cred import portal as Portal, checkers
 from twisted.conch import manhole, manhole_ssh
-
-ADMINISTRATOR_NAMES = ["mr.angry", "goppend"]
-ADMINISTRATOR_PASSWORD = "password!"
-AUTH_FAILURE_MESSAGES = [
-    "I am a strong black woman who don't need no man",
-    "no",
-    "lol",
-    "ok, I'll get right on that",
-    "how about no?",
-    "maybe tomorrow",
-    "I don't like your face, so no",
-]
-PLS_MESSAGES = [
-    "NO!",
-    "it wasn't me",
-    "shitty programming?",
-    "this is all Yop's fault, I swear!",
-    "oops",
-    "pls urself",
-    "no!",
-    "nyet",
-    "nein",
-]
-SUS_TRANSLATIONS = {
-    "goppend": ["gopsus", "hi goppend", "heil goppend"],
-    "centipede": ["susipede", "centisus", "shouldn't you be at the bakery?"],
-    "KEEEAAGGH": ["kegsus", "sus keg", "where the hell is micronesia?"],
-    "Administrator": ["zekesus", "sus zekin"],
-    "RimShooter": ["rimsus", "susshooter", "ramshoot", "ramscoop", "rimjob mcbimbob", "riddle diddle jim jam"],
-    "Ben": ["benson", "bensus", "bendy sus\nBENDY! BENDY!! BENDY! BENDY!!"],
-    "Yoplitein": ["yopsus", "yop is fgt"],
-    "Reign": ["reigny sus", "sus reign", "it's reigning sus", "it's reigning men"],
-}
 
 realStdout = sys.stdout
 realStderr = sys.stderr
@@ -66,8 +31,8 @@ sys.stderr = make_replacement(realStderr)
 
 running = True
 restart = False
-retry = False
-skype = irc = sven = handlers = None
+retrySkypeAttach = False
+skype = irc = sven = handlers = settings = None
 
 def send_message(message, exclude=None):
     if type(message) is unicode:
@@ -87,39 +52,86 @@ def manhole_factory(globals):
     realm.chainedProtocolFactory.protocolFactory = lambda x: manhole.Manhole(globals)
     portal = Portal.Portal(realm)
     
-    portal.registerChecker(checkers.InMemoryUsernamePasswordDatabaseDontUse(root=ADMINISTRATOR_PASSWORD))
+    portal.registerChecker(checkers.InMemoryUsernamePasswordDatabaseDontUse(root=settings.MANHOLE_PASSWORD))
     
     return manhole_ssh.ConchFactory(portal)
 
 def reactor_step():
-    """Run every second by the reactor. Handles changes in running/retry."""
+    """Run every second by the reactor. Handles changes in running/retrySkypeAttach."""
     
-    global retry
+    global retrySkypeAttach
     
     if running:
-        if retry:
-            retry = False
+        if retrySkypeAttach:
+            retrySkypeAttach = False
                             
             skype.attach()
-        
-        reactor.callLater(1, reactor_step)
     else:
         print "Reloading..."
         
         reactor.stop()
 
-def main():
-    global handlers, skype, irc, sven
+def get_settings():
+    try:
+        import gadget_settings as settings
+    except ImportError:
+        print "Please create gadget_settings.py"
+        
+        raise SystemExit
+    except Exception as e:
+        print "Exception raised by gadget_settings.py:"
+        
+        traceback.print_exc()
+        
+        raise SystemExit
     
+    return settings
+
+def parse_hostname(string):
+    try:
+        split = string.split(":")
+        split[1] = int(split[1])
+        
+        assert 0 <= split[1] <= 65535
+        return split
+    except IndexError:
+        print "Error in settings:\n'%s' is not a valid hostname:port combination." % (string,)
+        
+        raise SystemExit
+    except ValueError:
+        print "Error in settings:\n%r is not a number." % (split[1],)
+        
+        raise SystemExit
+    except AssertionError:
+        print "Error in settings:\n%d is not a valid port. (try somewhere in 0-65535)" % (split[1],)
+        
+        raise SystemExit
+
+def main():
+    global settings, handlers, skype, irc, sven
+    
+    settings = get_settings()
     handlers = Handlers()
     skype = SkypeBot()
-    irc = IrcFactory("Gadget", "localhost", 6667, "#tavern")
-    sven = SvenChatFactory("localhost", 65530)
+    
+    if settings.IRC_HOST:
+        irc = IrcFactory(settings.NICKNAME, *parse_hostname(settings.IRC_HOST), channel=settings.IRC_CHANNEL)
+    
+    if settings.GLOBALCHAT_HOST:
+        sven = SvenChatFactory(*parse_hostname(settings.GLOBALCHAT_HOST))
+    
+    if settings.ECHOER_HOST:
+        host, port = parse_hostname(settings.ECHOER_HOST)
+        
+        reactor.listenUDP(port, Echoer(), interface=host)
+    
+    if settings.MANHOLE_HOST:
+        host, port = parse_hostname(settings.MANHOLE_HOST)
+        
+        reactor.listenTCP(port, manhole_factory(globals()), interface=host)
     
     signal.signal(signal.SIGHUP, handlers.sighup)
-    reactor_step()
-    reactor.listenUDP(0, Echoer())
-    reactor.listenTCP(0, manhole_factory(globals()))
+    LoopingCall(reactor_step).start(1)
     reactor.run()
     
     if restart:
@@ -142,18 +154,25 @@ class Status(object):
 class SkypeBot(object):
     """Skype API handler."""
     
+    REATTACH_TIMEOUT = 60*60*1
+    
     def __init__(self):
-        self.skype = skype4py.Skype(Transport='x11')
+        self.get_skype()
+        
         self.skype.Timeout = 5000
-        self.skype.FriendlyName = "Gadget"
+        self.skype.FriendlyName = settings.NICKNAME
         self.skype.Settings.AutoAway = False
+        self.reattacher = LoopingCall(self.reattach)
         
         self.attach()
+        self.reattacher.start(self.REATTACH_TIMEOUT)
+    
+    def get_skype(self):
+        self.skype = skype4py.Skype(Transport='x11')
     
     def attach(self):
-        global retry
+        global retrySkypeAttach
         
-        print "Attempting to attach to skype"
         
         try:
             self.skype.Attach()
@@ -161,11 +180,22 @@ class SkypeBot(object):
             self.tavern = self.find_chat()
             self.skype.OnMessageStatus = self.message_handler
         except skype4py.errors.SkypeAPIError:
-            retry = True
+            print "[Skype] Failed to attach"
+            
+            retrySkypeAttach = True
+    
+    def reattach(self):
+        print "[Skype] Reattaching"
+        
+        del self.skype
+        
+        self.get_skype()
+        self.attach()
+        reactor.callLater(self.REATTACH_TIMEOUT, self.reattach)
     
     def find_chat(self):
         for chat in self.skype.Chats:
-            if "yop.lit.ein" in chat._Handle:
+            if self.skype.CurrentUserHandle in chat._Handle:
                 continue
             else:
                 return chat
@@ -182,7 +212,7 @@ class SkypeBot(object):
                 send_message(u"[Skype] \x02%s\x02\u202d: %s" % (msg.FromDisplayName, msg.Body), skype)
             
             
-            if msg.Body.startswith("!"):
+            if msg.Body.startswith(settings.COMMAND_PREFIX):
                 Status.set(Status.busy)
                 
                 args = msg.Body.split(" ")
@@ -234,7 +264,7 @@ class IrcBot(IRCClient):
                 send_message(u"[IRC] \x02%s\x02\u202d: %s" % (name, message), irc)
             
             
-            if message.startswith("!"):
+            if message.startswith(settings.COMMAND_PREFIX):
                 Status.set(Status.busy)
                 
                 args = message.split(" ")
@@ -379,7 +409,7 @@ class Handlers(object):
         return self.handlers[value]
     
     def init_handlers(self):
-        """Assembles list of handlers in code and in handlers/"""
+    
         
         for member in dir(self):
             if member.startswith("handle_"):
@@ -409,18 +439,18 @@ class Handlers(object):
         return proc.stdout.read() + proc.stderr.read()
     
     def get_auth_failure_msg(self):
-        return random.choice(AUTH_FAILURE_MESSAGES)
+        return random.choice(settings.AUTH_FAILURE_MESSAGES)
     
     def is_authed(self, environ):
-        return environ.get("SKYPE_HANDLE", None) in ADMINISTRATOR_NAMES
+        return any([environ.get("SKYPE_HANDLE", None) in x[0] for x in settings.ADMINISTRATORS])
     
     def sighup(self, signum, frame):
-        self.handle_reload(None, None, {"SKYPE_HANDLE": ADMINISTRATOR_NAMES[0]})
+        self.handle_reload(None, None, {"SKYPE_HANDLE": settings.ADMINISTRATORS[0]})
     
     def translate_sus(self, name):
         """Figure out what to say when someone says 'sus'"""
         
-        for test, result in SUS_TRANSLATIONS.iteritems():
+        for test, result in settings.SUS_TRANSLATIONS.iteritems():
             if test in name:
                 return random.choice(result)
         
@@ -431,7 +461,7 @@ class Handlers(object):
     def general(self, _, user, message):
         """Receives every message."""
         
-        if   "gadget" == message.lower():
+        if   settings.NICKNAME.lower() == message.lower():
             send_message("sus")
         elif "sus" == message.lower():
             msg = self.translate_sus(user)
@@ -440,13 +470,8 @@ class Handlers(object):
                 send_message(msg)
             else:
                 send_message("sus %s" % (user,))
-        elif all([x in message.lower() for x in ["gadget", "pls"]]): #GADGET PLS
-            send_message(random.choice(PLS_MESSAGES))
-        #elif "gadget" in message.lower():
-        #    randChars = [chr(x) for x in range(ord('a'), ord('z'))]
-        #    
-        #    random.shuffle(randChars)
-        #    send_message("".join(randChars))
+        elif all([x in message.lower() for x in [settings.NICKNAME.lower(), "pls"]]): #GADGET PLS
+            send_message(random.choice(settings.PLS_MESSAGES))
     
     def handle_help(self, cmd, args, environ):
         """!help [command name]\nShows you help n' stuff."""
@@ -504,6 +529,16 @@ class Handlers(object):
     
     def handle_gc(self, cmd, args, environ):
         sven.send_message("%s: %s" % (environ[NAME], " ".join(args))
+    
+    def handle_patience(self, cmd, args, environ):
+        def callback():
+            send_message("...patience...")
+        
+        for x in range(0, 5):
+            reactor.callLater(5*x, callback)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except AttributeError as e:
+        print "Setting '%s' is undefined" % (e.split("attribute ")[1][1:][:-1])
