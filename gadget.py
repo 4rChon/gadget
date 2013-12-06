@@ -158,28 +158,25 @@ class SkypeBot(object):
     REATTACH_TIMEOUT = 60*60*1
     
     def __init__(self):
-        self.get_skype()
-        
-        self.skype.Timeout = 5000
-        self.skype.FriendlyName = settings.NICKNAME
-        self.skype.Settings.AutoAway = False
+        self.skype = None
         self.reattacher = LoopingCall(self.reattach)
         
-        self.attach()
         self.reattacher.start(self.REATTACH_TIMEOUT)
     
     def get_skype(self):
         self.skype = skype4py.Skype(Transport='x11')
+        self.skype.Timeout = 5000
+        self.skype.FriendlyName = settings.NICKNAME
+        self.skype.Settings.AutoAway = False
     
     def attach(self):
         global retrySkypeAttach
-        
         
         try:
             self.skype.Attach()
             
             self.tavern = self.find_chat()
-            self.skype.OnMessageStatus = self.message_handler
+            self.skype.OnMessageStatus = (lambda msg, status: reactor.callFromThread(self.message_handler, msg, status))
         except skype4py.errors.SkypeAPIError:
             print "[Skype] Failed to attach"
             
