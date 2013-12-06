@@ -130,6 +130,7 @@ def main():
         
         reactor.listenTCP(port, manhole_factory(globals()), interface=host)
     
+    signal.signal(signal.SIGTERM, handlers.sigterm)
     signal.signal(signal.SIGHUP, handlers.sighup)
     LoopingCall(reactor_step).start(1)
     reactor.run()
@@ -445,7 +446,10 @@ class Handlers(object):
         return any([environ.get("SKYPE_HANDLE", None) in x[0] for x in settings.ADMINISTRATORS])
     
     def sighup(self, signum, frame):
-        self.handle_reload(None, None, {"SKYPE_HANDLE": settings.ADMINISTRATORS[0]})
+        self.handle_reload(None, None, {"SKYPE_HANDLE": settings.ADMINISTRATORS[0][0]})
+    
+    def sigterm(self, signum, frame):
+        self.handle_quit(None, None, {"SKYPE_HANDLE": settings.ADMINISTRATORS[0][0]})
     
     def translate_sus(self, name):
         """Figure out what to say when someone says 'sus'"""
