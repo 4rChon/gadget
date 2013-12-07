@@ -1,6 +1,5 @@
 *.pyc
-
-#hander data
+*.sh
+*.sublime-project
 data/*
-
 gadget_settings.py

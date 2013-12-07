@@ -532,7 +532,7 @@ class Handlers(object):
         send_message("/topic The %s Tavern" % (" ".join(args),))
     
     def handle_gc(self, cmd, args, environ):
-        sven.send_message("%s: %s" % (environ[NAME], " ".join(args))
+        sven.send_message("%s: %s" % (environ[NAME], " ".join(args)))
     
     def handle_patience(self, cmd, args, environ):
         def callback():
