@@ -1,2 +1,6 @@
 *.pyc
+
+#hander data
+data/*
+
 gadget_settings.py

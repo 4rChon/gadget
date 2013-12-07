@@ -110,6 +110,9 @@ def parse_hostname(string):
 def main():
     global settings, handlers, skype, irc, sven
     
+    if not os.path.exists("data/"):
+        os.mkdir("data/")
+    
     settings = get_settings()
     handlers = Handlers()
     skype = SkypeBot()
