@@ -26,15 +26,12 @@ def get():
         
         raise SystemExit
     
-    print random.choice(words),
+    word = random.choice(words)
     
     if random.randint(0, 1):
-        print "\b!",
+        word += "!"
     
-    print
-
-#if not os.path.exists("centipede.txt"):
-#    open("centipede.txt", "a").close()
+    print word
 
 if len(sys.argv) > 1:
     if sys.argv[1].lower() == "add" and len(sys.argv) > 2:
