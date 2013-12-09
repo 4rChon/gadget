@@ -1,6 +1,3 @@
-#vim: set ft=python:
-#sublime: x_syntax Packages/Python/Python.tmLanguage
-
 #general stuff
 NICKNAME = "Gadget"
 COMMAND_PREFIX = "!"
@@ -19,16 +16,41 @@ GLOBALCHAT_HOST = "localhost:5432"
 ECHOER_HOST = "0.0.0.0:2345"
 
 #for debugging
-#MANHOLE_HOST = "0.0.0.0:2345"
-#MANHOLE_PASSWORD = "changeme"
+MANHOLE_HOST = ""
+MANHOLE_PASSWORD = ""
 
 #messages
 AUTH_FAILURE_MESSAGES = [
-    "messages to send when someone is not authorized to run a command",
+    "I am a strong black woman who don't need no man",
+    "no",
+    "lol",
+    "ok, I'll get right on that",
+    "how about no?",
+    "maybe tomorrow",
+    "I don't like your face, so no",
+    "no soap, honkie lips.",
+    "you silly, twisted boy you.",
+    "just what do you think you're doing, dave?",
+    "are you on drugs?",
+    "have a gorilla",
+    "what, what, what, what, what, what, what, what?",
+    "that's something I cannot allow to happen",
+    "you can't get the wood, you know",
+    "this mission is too important for me to allow you to jeopardize it",
 ]
 PLS_MESSAGES = [
-    "messages to send when someone is fed up with the bot",
+    "NO!",
+    "it wasn't me",
+    "shitty programming?",
+    "this is all Yop's fault, I swear!",
+    "oops",
+    "pls urself",
+    "no!",
+    "nyet",
+    "nein",
 ]
+
+SUS_MARKERS = ["sus"]
 SUS_TRANSLATIONS = {
-    "name to match": ["list", "of", "greetings"],
+    "goppend": ["gopsus", "hi goppend", "heil goppend"],
 }
