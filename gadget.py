@@ -75,9 +75,12 @@ def get_settings():
     try:
         import gadget_settings as settings
     except ImportError:
-        print "Please create gadget_settings.py"
+        import gadget_defaults as settings
         
-        raise SystemExit
+        print "Warning: gadget_settings.py not found - creating with defaults"
+        
+        with open("gadget_settings.py", "w") as f:
+            f.write("from gadget_defaults import *\n\n")
     except Exception as e:
         print "Exception raised by gadget_settings.py:"
         
@@ -192,7 +195,6 @@ class SkypeBot(object):
         
         self.get_skype()
         self.attach()
-        reactor.callLater(self.REATTACH_TIMEOUT, self.reattach)
     
     def find_chat(self):
         for chat in self.skype.Chats:
@@ -545,4 +547,4 @@ if __name__ == '__main__':
     try:
         main()
     except AttributeError as e:
-        print "Setting '%s' is undefined" % (e.split("attribute ")[1][1:][:-1])
+        print "Setting '%s' is undefined" % (e.message.split("attribute ")[1][1:][:-1])
