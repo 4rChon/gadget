@@ -1,25 +1,26 @@
-#general stuff
+##general stuff
 NICKNAME = "Gadget"
 COMMAND_PREFIX = "!"
 ADMINISTRATORS = [ #people with access to commands such as !reload
     ("skype name", "irc mask", "steamid"),
 ]
 
-#connection information
-#blank hosts disable those servers
-IRC_HOST = "localhost:6667"
+##connection information
+##a blank address disables the server
+
+IRC_ADDRESS = "localhost:6667"
 IRC_CHANNEL = "#channel"
 
-GLOBALCHAT_HOST = "localhost:5432"
+GLOBALCHAT_ADDRESS = ""
 
-#servers hosted by the bot
-ECHOER_HOST = "0.0.0.0:2345"
+ECHOER_BIND_ADDRESS = "0.0.0.0:2345" #sends incoming datagrams as messages
 
-#for debugging
-MANHOLE_HOST = ""
+#interpreter over ssh, for debugging
+MANHOLE_BIND_ADDRESS = ""
 MANHOLE_PASSWORD = ""
 
-#messages
+##messages
+
 AUTH_FAILURE_MESSAGES = [
     "I am a strong black woman who don't need no man",
     "no",
@@ -50,7 +51,7 @@ PLS_MESSAGES = [
     "nein",
 ]
 
-SUS_MARKERS = ["sus"]
-SUS_TRANSLATIONS = {
+SUS_MARKERS = ["sus", "hi"] #when somebody sends a message consisting only of these strings
+SUS_TRANSLATIONS = { #greet them in a special way
     "goppend": ["gopsus", "hi goppend", "heil goppend"],
 }

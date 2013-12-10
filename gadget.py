@@ -120,19 +120,21 @@ def main():
     handlers = Handlers()
     skype = SkypeBot()
     
-    if settings.IRC_HOST:
-        irc = IrcFactory(settings.NICKNAME, *parse_hostname(settings.IRC_HOST), channel=settings.IRC_CHANNEL)
+    Status.set(Status.online)
     
-    if settings.GLOBALCHAT_HOST:
-        sven = SvenChatFactory(*parse_hostname(settings.GLOBALCHAT_HOST))
+    if settings.IRC_ADDRESS:
+        irc = IrcFactory(settings.NICKNAME, *parse_hostname(settings.IRC_ADDRESS), channel=settings.IRC_CHANNEL)
     
-    if settings.ECHOER_HOST:
-        host, port = parse_hostname(settings.ECHOER_HOST)
+    if settings.GLOBALCHAT_ADDRESS:
+        sven = SvenChatFactory(*parse_hostname(settings.GLOBALCHAT_ADDRESS))
+    
+    if settings.ECHOER_BIND_ADDRESS:
+        host, port = parse_hostname(settings.ECHOER_BIND_ADDRESS)
         
         reactor.listenUDP(port, Echoer(), interface=host)
     
-    if settings.MANHOLE_HOST:
-        host, port = parse_hostname(settings.MANHOLE_HOST)
+    if settings.MANHOLE_BIND_ADDRESS:
+        host, port = parse_hostname(settings.MANHOLE_BIND_ADDRESS)
         
         reactor.listenTCP(port, manhole_factory(globals()), interface=host)
     
@@ -140,6 +142,7 @@ def main():
     signal.signal(signal.SIGHUP, handlers.sighup)
     LoopingCall(reactor_step).start(1)
     reactor.run()
+    Status.set(Status.invisible)
     
     if restart:
         sys.argv[0] = os.path.abspath(sys.argv[0])
@@ -149,14 +152,14 @@ def main():
 class Status(object):
     """Skype4Py aliases."""
     
-    normal = skype4py.cusOnline
+    online = skype4py.cusOnline
     busy = skype4py.cusDoNotDisturb
     waiting = skype4py.cusAway
     invisible = skype4py.cusInvisible
     
     @staticmethod
     def set(status):
-        skype.skype.ChangeUserStatus(status)
+        skype.skype.CurrentUserStatus = status
 
 class SkypeBot(object):
     """Skype API handler."""
@@ -236,7 +239,7 @@ class SkypeBot(object):
             else:
                 handlers.general(self, msg.FromDisplayName, msg.Body)
             
-            reactor.callLater(1, lambda: Status.set(Status.normal))
+            reactor.callLater(1, lambda: Status.set(Status.online))
     
     def send_message(self, message):
         self.tavern.SendMessage(message)
@@ -287,7 +290,7 @@ class IrcBot(IRCClient):
             else:
                 handlers.general(self.factory, user, message)
             
-            reactor.callLater(1, lambda: Status.set(Status.normal))
+            reactor.callLater(1, lambda: Status.set(Status.online))
     
     def action(self, user, channel, message):
         self.privmsg(user, channel, message, True)
@@ -468,7 +471,7 @@ class Handlers(object):
         """Receives every message."""
         
         if   settings.NICKNAME.lower() == message.lower():
-            send_message("sus")
+            send_message("fku")
         elif "sus" == message.lower():
             msg = self.translate_sus(user)
             
