@@ -5,6 +5,7 @@ import glob
 import random
 import signal
 import traceback
+import time
 
 import Skype4Py as skype4py
 from twisted.internet import protocol, reactor
@@ -33,6 +34,7 @@ running = True
 restart = False
 retrySkypeAttach = False
 skype = irc = sven = handlers = settings = None
+lastStepTime = time.time()
 
 def send_message(message, exclude=None):
     if type(message) is unicode:
@@ -59,17 +61,25 @@ def manhole_factory(globals):
 def reactor_step():
     """Run every second by the reactor. Handles changes in running/retrySkypeAttach."""
     
-    global retrySkypeAttach
+    global retrySkypeAttach, lastStepTime
+    
+    curTime = time.time()
+    delta = curTime - lastStepTime
+    
+    if delta > 1.5:
+        print "Something is slowing down the reactor"
     
     if running:
         if retrySkypeAttach:
             retrySkypeAttach = False
                             
-            skype.attach()
+            reactor.callInThread(skype.attach)
     else:
         print "Reloading..."
         
         reactor.stop()
+    
+    lastStepTime = time.time()
 
 def get_settings():
     try:
@@ -141,6 +151,7 @@ def main():
     signal.signal(signal.SIGTERM, handlers.sigterm)
     signal.signal(signal.SIGHUP, handlers.sighup)
     LoopingCall(reactor_step).start(1)
+    reactor.callLater(5000, time.sleep, 5)
     reactor.run()
     Status.set(Status.invisible)
     
@@ -159,7 +170,15 @@ class Status(object):
     
     @staticmethod
     def set(status):
-        skype.skype.CurrentUserStatus = status
+        def callback():
+            try:
+                skype.skype.CurrentUserStatus = status
+            except skype4py.SkypeAPIError:
+                reactor.callLater(500, reactor.callInThread, callback)
+            except skype4py.SkypeError:
+                pass
+        
+        reactor.callInThread(callback)
 
 class SkypeBot(object):
     """Skype API handler."""
@@ -172,11 +191,13 @@ class SkypeBot(object):
         
         self.reattacher.start(self.REATTACH_TIMEOUT)
     
-    def get_skype(self):
+    def make_skype(self):
         self.skype = skype4py.Skype(Transport='x11')
         self.skype.Timeout = 5000
         self.skype.FriendlyName = settings.NICKNAME
         self.skype.Settings.AutoAway = False
+        self.skype.OnMessageStatus = (lambda msg, status: reactor.callFromThread(self.message_handler, msg, status))
+        self.skype.OnAttachmentStatus = (lambda status: reactor.callFromThread(self.attachment_status_handler, status))
     
     def attach(self):
         global retrySkypeAttach
@@ -185,7 +206,6 @@ class SkypeBot(object):
             self.skype.Attach()
             
             self.tavern = self.find_chat()
-            self.skype.OnMessageStatus = (lambda msg, status: reactor.callFromThread(self.message_handler, msg, status))
         except skype4py.errors.SkypeAPIError:
             print "[Skype] Failed to attach"
             
@@ -196,8 +216,10 @@ class SkypeBot(object):
         
         del self.skype
         
-        self.get_skype()
+        self.make_skype()
         self.attach()
+        
+        print "[Skype] Reattached"
     
     def find_chat(self):
         for chat in self.skype.Chats:
@@ -241,8 +263,17 @@ class SkypeBot(object):
             
             reactor.callLater(1, lambda: Status.set(Status.online))
     
+    def attachment_status_handler(self, status):
+        global retrySkypeAttach
+        
+        if status == skype4py.apiAttachAvailable:
+            retrySkypeAttach = True
+    
     def send_message(self, message):
-        self.tavern.SendMessage(message)
+        reactor.callInThread(self.tavern.SendMessage, message)
+    
+    def is_authed(self, environ):
+        return False #TODO
 
 class IrcBot(IRCClient):
     """IRC protocol manager."""
@@ -357,6 +388,9 @@ class IrcFactory(protocol.ClientFactory):
                 print "[IRC] Error: don't know how to %s" % (cmd,)
         else:
             self.client.say(self.channel, message)
+    
+    def is_authed(self, environ):
+        return False #TODO
 
 class Echoer(protocol.DatagramProtocol):
     """Listens for datagrams, and sends them as messages."""
@@ -402,6 +436,9 @@ class SvenChatFactory(protocol.ClientFactory):
             message = message.encode("utf-8")
         
         self.client.sendLine("< " + message)
+    
+    def is_authed(self, environ):
+        return False #TODO: needs protocol support
 
 class Handlers(object):
     """Source-agnostic message handlers."""

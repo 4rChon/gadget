@@ -20,6 +20,15 @@ environ = {
     "all": all,
     "any": any,
     "reversed": reversed,
+    "chr": chr,
+    "ord": ord,
+    "int": int,
+    "float": float,
+    "long": long,
+    "str": str,
+    "bin": bin,
+    "hex": hex,
+    "sum": sum,
 }
 
 if args.startswith("_="):
