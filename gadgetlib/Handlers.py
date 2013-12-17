@@ -8,6 +8,23 @@ from twisted.internet.defer import Deferred
 
 from gadgetlib.Globals import Globals
 
+def require_auth(func):
+    def wrapper(self, cmd, args, environ):
+        if not self.is_authed(environ):
+            return self.deferred_wrap(self.get_auth_failure_msg())
+        else:
+            return func(self, cmd, args, environ)
+    
+    return wrapper
+
+def simple_callback(func):
+    def wrapper(data):
+        func(data)
+        
+        return data
+    
+    return wrapper
+
 class Handlers(object):
     """Source-agnostic message handlers."""
     
@@ -42,6 +59,7 @@ class Handlers(object):
         
         deferred = handler(cmd, args, environ)
         
+        @simple_callback
         def callback(data):
             self.send_message(data)
         
@@ -157,33 +175,33 @@ class Handlers(object):
         
         return self.deferred_wrap("I know about the following commands: " + ", ".join(self.handlers.keys()))
     
+    @require_auth
     def handle_reload(self, cmd, args, environ):
-        if not self.is_authed(environ):
-            return self.deferred_wrap(self.get_auth_failure_msg())
-        
         Globals.running = False
         Globals.restart = True
+        
+        return self.deferred_wrap("yessir")
     
+    @require_auth
     def handle_quit(self, cmd, args, environ):
-        if not self.is_authed(environ):
-            return self.deferred_wrap(self.get_auth_failure_msg())
-        
         Globals.running = False
-    
-    def handle_pull(self, cmd, args, environ):
-        if not self.is_authed(environ):
-            return self.deferred_wrap(self.get_auth_failure_msg())
         
+        return self.deferred_wrap("later, bitches")
+    
+    @require_auth
+    def handle_pull(self, cmd, args, environ):
         deferred = self.HandlerProtocol("/usr/bin/git pull origin master".split(" "), os.environ.copy()).deferred
         
-        deferred.addCallback(lambda *args: self.handle_reload(None, None, environ))
+        @simple_callback
+        def callback(data):
+            self.handle_reload(None, None, environ)
+        
+        deferred.addCallback(callback)
         
         return deferred
     
+    @require_auth
     def handle_topic(self, cmd, args, environ):
-        if not self.is_authed(environ):
-            return self.deferred_wrap(self.get_auth_failure_msg())
-        
         self.send_message("/topic The %s Tavern" % (" ".join(args),))
     
     def handle_gc(self, cmd, args, environ):

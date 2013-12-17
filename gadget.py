@@ -16,20 +16,20 @@ from gadgetlib.Skype import SkypeBot
 from gadgetlib.IRC import IrcFactory
 from gadgetlib.GlobalChat import GlobalChatFactory
 
-#realStdout = sys.stdout
-#realStderr = sys.stderr
-#
-#def make_replacement(file):
-#    class wrapper(object):
-#        @staticmethod
-#        def write(*args):
-#            file.write(*args)
-#            file.flush()
-#    
-#    return wrapper()
-#
-#sys.stdout = make_replacement(realStdout)
-#sys.stderr = make_replacement(realStderr)
+realStdout = sys.stdout
+realStderr = sys.stderr
+
+def make_replacement(file):
+    class wrapper(object):
+        @staticmethod
+        def write(*args):
+            file.write(*args)
+            file.flush()
+    
+    return wrapper()
+
+sys.stdout = make_replacement(realStdout)
+sys.stderr = make_replacement(realStderr)
 
 def manhole_factory(globals):
     realm = manhole_ssh.TerminalRealm()
