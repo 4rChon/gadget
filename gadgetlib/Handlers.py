@@ -37,6 +37,8 @@ class Handlers(object):
             handler = self.handlers[cmd]
         except KeyError:
             self.send_message("No such command")
+            
+            return
         
         deferred = handler(cmd, args, environ)
         
