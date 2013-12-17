@@ -5,6 +5,9 @@ ADMINISTRATORS = [ #people with access to commands such as !reload
     ("skype name", "irc mask", "steamid"),
 ]
 
+#handle for the skype conversation to bind to
+SKYPE_CONVERSATION_ID = ""
+
 ##connection information
 ##a blank address disables the server
 
