@@ -60,11 +60,11 @@ class SkypeBot(object):
     def message_handler(self, msg, status):
         if status == skype4py.cmsReceived:
             if msg.Type == skype4py.cmeEmoted:
-                Globals.handlers.send_message(u"[Skype] *\x02%s\x02\u202d %s*" % (msg.FromDisplayName.replace("\u202e", ""), msg.Body), self)
+                Globals.commands.send_message(u"[Skype] *\x02%s\x02\u202d %s*" % (msg.FromDisplayName.replace("\u202e", ""), msg.Body), self)
                 
                 return
             else:
-                Globals.handlers.send_message(u"[Skype] \x02%s\x02\u202d: %s" % (msg.FromDisplayName, msg.Body), self)
+                Globals.commands.send_message(u"[Skype] \x02%s\x02\u202d: %s" % (msg.FromDisplayName, msg.Body), self)
             
             if msg.Body.startswith(Globals.settings.COMMAND_PREFIX):
                 args = msg.Body.split(" ")
@@ -73,9 +73,9 @@ class SkypeBot(object):
                 environ["NAME"] = msg.FromDisplayName
                 environ["SKYPE_HANDLE"] = msg.FromHandle
                 
-                Globals.handlers(cmd, args[1:], environ)
+                Globals.commands(cmd, args[1:], environ)
             else:
-                Globals.handlers.general(self, msg.FromDisplayName, msg.Body)
+                Globals.commands.general(self, msg.FromDisplayName, msg.Body)
     
     def attachment_status_handler(self, status):
         global retrySkypeAttach

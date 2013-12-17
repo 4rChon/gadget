@@ -7,42 +7,26 @@ from twisted.internet import reactor, protocol
 from twisted.internet.defer import Deferred
 
 from gadgetlib.Globals import Globals
+from gadgetlib.handlers import require_auth, simple_callback, make_deferred
 
-def require_auth(func):
-    def wrapper(self, cmd, args, environ):
-        if not self.is_authed(environ):
-            return self.deferred_wrap(self.get_auth_failure_msg())
-        else:
-            return func(self, cmd, args, environ)
+class SubprocessProtocol(protocol.ProcessProtocol):
+    def __init__(self, args, environment):
+        self.deferred = Deferred()
+        self.buffer = StringIO()
+        
+        reactor.spawnProcess(self, args[0], args, environment)
     
-    return wrapper
+    def outReceived(self, data):
+        self.buffer.write(data)
+    
+    def errReceived(self, data):
+        self.outReceived(data)
+    
+    def processEnded(self, status):
+        self.deferred.callback(self.buffer.getvalue())
 
-def simple_callback(func):
-    def wrapper(data):
-        func(data)
-        
-        return data
-    
-    return wrapper
-
-class Handlers(object):
-    """Source-agnostic message handlers."""
-    
-    class HandlerProtocol(protocol.ProcessProtocol):
-        def __init__(self, args, environment):
-            self.deferred = Deferred()
-            self.buffer = StringIO()
-            
-            reactor.spawnProcess(self, args[0], args, environment)
-        
-        def outReceived(self, data):
-            self.buffer.write(data)
-        
-        def errReceived(self, data):
-            self.outReceived(data)
-        
-        def processEnded(self, status):
-            self.deferred.callback(self.buffer.getvalue())
+class Commands(object):
+    """Factory for management of command handlers and related tasks."""
     
     def __init__(self):
         self.handlers = {}
@@ -94,7 +78,7 @@ class Handlers(object):
         if type(environ["NAME"]) == unicode:
             environ["NAME"] = environ["NAME"].encode("utf-8")
         
-        return self.HandlerProtocol(cmdline, environ).deferred
+        return SubprocessProtocol(cmdline, environ).deferred
     
     def get_auth_failure_msg(self):
         return random.choice(Globals.settings.AUTH_FAILURE_MESSAGES)
@@ -116,13 +100,6 @@ class Handlers(object):
                 return random.choice(result)
         
         return None
-    
-    def deferred_wrap(self, data):
-        deferred = Deferred()
-        
-        deferred.callback(data)
-        
-        return deferred
     
     def send_message(self, message, exclude=None):
         if type(message) is unicode:
@@ -165,32 +142,32 @@ class Handlers(object):
                 docs = getattr(self, name).__doc__
                 
                 if docs:
-                    return self.deferred_wrap(docs)
+                    return make_deferred(docs)
                 else:
-                    return self.deferred_wrap("I don't know what %s does" % (query,))
+                    return make_deferred("I don't know what %s does" % (query,))
             elif query in self.handlers.keys():
-                return self.deferred_wrap("I don't know what %s does\nTry !%s help" % (query, query))
+                return make_deferred("I don't know what %s does\nTry !%s help" % (query, query))
             else:
-                return self.deferred_wrap("No such command")
+                return make_deferred("No such command")
         
-        return self.deferred_wrap("I know about the following commands: " + ", ".join(self.handlers.keys()))
+        return make_deferred("I know about the following commands: " + ", ".join(self.handlers.keys()))
     
     @require_auth
     def handle_reload(self, cmd, args, environ):
         Globals.running = False
         Globals.restart = True
         
-        return self.deferred_wrap("yessir")
+        return make_deferred("yessir")
     
     @require_auth
     def handle_quit(self, cmd, args, environ):
         Globals.running = False
         
-        return self.deferred_wrap("later, bitches")
+        return make_deferred("later, bitches")
     
     @require_auth
     def handle_pull(self, cmd, args, environ):
-        deferred = self.HandlerProtocol("/usr/bin/git pull origin master".split(" "), os.environ.copy()).deferred
+        deferred = SubprocessProtocol("/usr/bin/git pull origin master".split(" "), os.environ.copy()).deferred
         
         @simple_callback
         def callback(data):

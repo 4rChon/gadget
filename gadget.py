@@ -11,7 +11,7 @@ from twisted.cred import portal as Portal, checkers
 from twisted.conch import manhole, manhole_ssh
 
 from gadgetlib.Globals import Globals
-from gadgetlib.Handlers import Handlers
+from gadgetlib.Commands import Commands
 from gadgetlib.Skype import SkypeBot
 from gadgetlib.IRC import IrcFactory
 from gadgetlib.GlobalChat import GlobalChatFactory
@@ -105,7 +105,7 @@ def main():
         os.mkdir("data/")
     
     Globals.settings = get_settings()
-    Globals.handlers = Handlers()
+    Globals.commands = Commands()
     Globals.skype = SkypeBot()
     
     if Globals.settings.IRC_ADDRESS:
@@ -124,8 +124,8 @@ def main():
         
         reactor.listenTCP(port, manhole_factory(globals()), interface=host)
     
-    signal.signal(signal.SIGTERM, Globals.handlers.sigterm)
-    signal.signal(signal.SIGHUP, Globals.handlers.sighup)
+    signal.signal(signal.SIGTERM, Globals.commands.sigterm)
+    signal.signal(signal.SIGHUP, Globals.commands.sighup)
     LoopingCall(reactor_step).start(1)
     reactor.run()
     
@@ -138,7 +138,7 @@ class Echoer(protocol.DatagramProtocol):
     """Listens for datagrams, and sends them as messages."""
     
     def datagramReceived(self, data, (host, port)):
-        Globals.handlers.send_message(data)
+        Globals.commands.send_message(data)
 
 if __name__ == '__main__':
     try:

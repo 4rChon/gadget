@@ -24,11 +24,11 @@ class IrcBot(IRCClient):
             name = user.split("!")[0]
             
             if action:
-                Globals.handlers.send_message(u"[IRC] *\x02%s\x02\u202d %s*" % (name, message), self)
+                Globals.commands.send_message(u"[IRC] *\x02%s\x02\u202d %s*" % (name, message), self)
                 
                 return
             else:
-                Globals.handlers.send_message(u"[IRC] \x02%s\x02\u202d: %s" % (name, message), self)
+                Globals.commands.send_message(u"[IRC] \x02%s\x02\u202d: %s" % (name, message), self)
             
             if message.startswith(Globals.settings.COMMAND_PREFIX):
                 args = message.split(" ")
@@ -36,31 +36,31 @@ class IrcBot(IRCClient):
                 environ = os.environ.copy()
                 environ["NAME"] = name
                 
-                Globals.handlers(cmd, args[1:], environ)
+                Globals.commands(cmd, args[1:], environ)
             else:
-                Globals.handlers.general(self.factory, user, message)
+                Globals.commands.general(self.factory, user, message)
             
     
     def action(self, user, channel, message):
         self.privmsg(user, channel, message, True)
     
     def userRenamed(self, old, new):
-        Globals.handlers.send_message("[IRC] %s changed name to %s" % (old, new), self)
+        Globals.commands.send_message("[IRC] %s changed name to %s" % (old, new), self)
     
     def userJoined(self, user, channel):
         if channel == self.factory.channel:
-            Globals.handlers.send_message("[IRC] %s joined" % (user,), self)
+            Globals.commands.send_message("[IRC] %s joined" % (user,), self)
     
     def userLeft(self, user, channel):
         if channel == self.factory.channel:
-            Globals.handlers.send_message("[IRC] %s left" % (user,), self)
+            Globals.commands.send_message("[IRC] %s left" % (user,), self)
     
     def userQuit(self, user, reason):
-        Globals.handlers.send_message("[IRC] %s quit (%s)" % (user, reason), self)
+        Globals.commands.send_message("[IRC] %s quit (%s)" % (user, reason), self)
     
     def userKicked(self, user, channel, kicker, reason):
         if channel == self.factory.channel:
-            Globals.handlers.send_message("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason), self)
+            Globals.commands.send_message("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason), self)
 
 class IrcFactory(protocol.ClientFactory):
     """IRC connection manager."""

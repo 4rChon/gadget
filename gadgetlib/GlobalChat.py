@@ -11,7 +11,7 @@ class GlobalChatProtocol(basic.LineReceiver):
     
     def lineReceived(self, line):
         if line.startswith("<"):
-            Globals.handlers.send_message(line)
+            Globals.commands.send_message(line)
 
 class GlobalChatFactory(protocol.ClientFactory):
     def __init__(self, host, port):
