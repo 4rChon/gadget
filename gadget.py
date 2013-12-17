@@ -67,12 +67,12 @@ def get_settings():
     except ImportError:
         import gadget_defaults as settings
         
-        print "Warning: gadget_Globals.settings.py not found - creating with defaults"
+        print "Warning: gadget_settings.py not found - creating with defaults"
         
-        with open("gadget_Globals.settings.py", "w") as f:
+        with open("gadget_settings.py", "w") as f:
             f.write("from gadget_defaults import *\n\n")
     except Exception as e:
-        print "Exception raised by gadget_Globals.settings.py:"
+        print "Exception raised by gadget_settings.py:"
         
         traceback.print_exc()
         
