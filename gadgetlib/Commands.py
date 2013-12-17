@@ -1,6 +1,7 @@
 import glob
 import os
 import random
+import importlib
 from cStringIO import StringIO
 
 from twisted.internet import reactor, protocol
@@ -53,14 +54,38 @@ class Commands(object):
             return deferred
     
     def init_handlers(self):
-        for member in dir(self):
-            if member.startswith("handle_"):
-                self.handlers.update({member.split("handle_")[1]: getattr(self, member)})
+        get_command_name = lambda name: name.split("handle_")[1]
         
-        fileCmds = [x.split("/")[1].split(".py")[0] for x in glob.glob("handlers/*.py")]
+        for name in dir(self):
+            if name.startswith("handle_"):
+                self.handlers.update({get_command_name(name): getattr(self, name)})
+        
+        internalHandlers = self.get_internal_handlers()
+        
+        for moduleName in internalHandlers:
+            module = importlib.import_module("gadgetlib.handlers.%s" % moduleName)
+            
+            for name in dir(module):
+                if name.startswith("handle_"):
+                    func = getattr(module, name)
+                    func = func.__get__(self, Commands) #bind the first argument
+                    
+                    self.handlers.update({get_command_name(name): func})
+        
+        fileCmds = [os.path.split(x)[1][:-3] for x in glob.glob("handlers/*.py")]
         
         for file in fileCmds:
             self.handlers.update({file: self.run_handler})
+    
+    def get_internal_handlers(self):
+        internalHandlers = glob.glob("gadgetlib/handlers/*.py")
+        
+        for index, file in zip(range(len(internalHandlers)), internalHandlers[:]):
+            internalHandlers[index] = os.path.split(file)[1][:-3]
+        
+        internalHandlers.remove("__init__")
+        
+        return internalHandlers
     
     def run_handler(self, cmd, args, environ):
         """Runs a handler script."""
@@ -135,58 +160,19 @@ class Commands(object):
         """!help [command name]\nShows you help n' stuff."""
         
         if len(args) > 0:
-            query = args[0]
-            name = "handle_%s" % (query,)
+            name = args[0]
             
-            if hasattr(self, name):
-                docs = getattr(self, name).__doc__
-                
-                if docs:
-                    return make_deferred(docs)
-                else:
-                    return make_deferred("I don't know what %s does" % (query,))
-            elif query in self.handlers.keys():
-                return make_deferred("I don't know what %s does\nTry !%s help" % (query, query))
+            try:
+                handler = self.handlers[name]
+            except KeyError:
+                return make_deferred("No such command.")
+            
+            if handler == self.run_handler:
+                return make_deferred("I don't know what {0} does.\ntry !{0} help".format(name))
             else:
-                return make_deferred("No such command")
-        
-        return make_deferred("I know about the following commands: " + ", ".join(self.handlers.keys()))
-    
-    @require_auth
-    def handle_reload(self, cmd, args, environ):
-        Globals.running = False
-        Globals.restart = True
-        
-        return make_deferred("yessir")
-    
-    @require_auth
-    def handle_quit(self, cmd, args, environ):
-        Globals.running = False
-        
-        return make_deferred("later, bitches")
-    
-    @require_auth
-    def handle_pull(self, cmd, args, environ):
-        deferred = SubprocessProtocol("/usr/bin/git pull origin master".split(" "), os.environ.copy()).deferred
-        
-        @simple_callback
-        def callback(data):
-            self.handle_reload(None, None, environ)
-        
-        deferred.addCallback(callback)
-        
-        return deferred
-    
-    @require_auth
-    def handle_topic(self, cmd, args, environ):
-        self.send_message("/topic The %s Tavern" % (" ".join(args),))
-    
-    def handle_gc(self, cmd, args, environ):
-        Globals.sven.send_message("%s: %s" % (environ[NAME], " ".join(args)))
-    
-    def handle_patience(self, cmd, args, environ):
-        def callback():
-            self.send_message("...patience...")
-        
-        for x in range(0, 5):
-            reactor.callLater(5*x, callback)
+                if hasattr(handler, "__doc__") and type(handler.__doc__) is str:
+                    return make_deferred(handler.__doc__)
+                else:
+                    return make_deferred("I don't know what {0} does.".format(name))
+        else:
+            return make_deferred("I know about the following commands: " + ", ".join(self.handlers.keys()))
