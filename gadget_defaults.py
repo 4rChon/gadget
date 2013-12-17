@@ -53,6 +53,17 @@ PLS_MESSAGES = [
     "nyet",
     "nein",
 ]
+NAME_MESSAGES = [ #what to say when people say the bot's name
+    "sus",
+    "beep",
+    "boop",
+    "beepboop"
+    "bzzrt",
+    "greetings",
+    "hi",
+    "yes?",
+    "yes, this is gadget"
+]
 
 SUS_MARKERS = ["sus", "hi"] #when somebody sends a message consisting only of these strings
 SUS_TRANSLATIONS = { #greet them in a special way

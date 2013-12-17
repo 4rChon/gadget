@@ -3,7 +3,6 @@ import sys
 import os
 import signal
 import traceback
-import time
 
 from twisted.internet import protocol, reactor
 from twisted.internet.task import LoopingCall
@@ -43,12 +42,6 @@ def manhole_factory(globals):
 def reactor_step():
     """Run every second by the reactor. Handles changes in running/retrySkypeAttach."""
     
-    #curTime = time.time()
-    #delta = curTime - lastStepTime
-    #
-    #if delta > 1.5:
-    #    print "Something is slowing down the reactor"
-    
     if Globals.running:
         if Globals.retrySkypeAttach:
             Globals.retrySkypeAttach = False
@@ -58,8 +51,6 @@ def reactor_step():
         print "Reloading..."
         
         reactor.stop()
-    
-    #lastStepTime = time.time()
 
 def get_settings():
     try:

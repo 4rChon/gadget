@@ -145,7 +145,7 @@ class Commands(object):
         """Receives every message."""
         
         if   Globals.settings.NICKNAME.lower() == message.lower():
-            self.send_message("fku")
+            self.send_message(random.choice(Globals.settings.NAME_MESSAGES))
         elif "sus" == message.lower():
             msg = self.translate_sus(user)
             
