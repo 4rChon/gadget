@@ -1,3 +1,5 @@
+import os
+
 from gadgetlib.Commands import SubprocessProtocol
 from gadgetlib.Globals import Globals
 from gadgetlib.handlers import require_auth, make_deferred

@@ -132,7 +132,4 @@ class Echoer(protocol.DatagramProtocol):
         Globals.commands.send_message(data)
 
 if __name__ == '__main__':
-    try:
-        main()
-    except AttributeError as e:
-        print "Setting '%s' is undefined" % (e.message.split("attribute ")[1][1:][:-1])
+    main()

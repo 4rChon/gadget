@@ -1,6 +1,8 @@
 from twisted.internet import reactor
 
 def handle_patience(self, cmd, args, environ):
+    """!patience\nBoost.Build kindly requests that you cool your tits."""
+    
     def callback():
         self.send_message("...patience...")
     

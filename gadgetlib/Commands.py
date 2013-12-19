@@ -7,10 +7,13 @@ from cStringIO import StringIO
 from twisted.internet import reactor, protocol
 from twisted.internet.defer import Deferred
 
+from gadgetlib import AuthenticationError
 from gadgetlib.Globals import Globals
 from gadgetlib.handlers import require_auth, simple_callback, make_deferred
 
 class SubprocessProtocol(protocol.ProcessProtocol):
+    """Twisted-friendly subprocess."""
+    
     def __init__(self, args, environment):
         self.deferred = Deferred()
         self.buffer = StringIO()
@@ -35,6 +38,8 @@ class Commands(object):
         self.init_handlers()
     
     def __call__(self, cmd, args, environ):
+        """Called by protocol interfaces to notify us of command messages."""
+        
         try:
             handler = self.handlers[cmd]
         except KeyError:
@@ -42,7 +47,10 @@ class Commands(object):
             
             return
         
-        deferred = handler(cmd, args, environ)
+        try:
+            deferred = handler(cmd, args, environ)
+        except AuthenticationError:
+            deferred = make_deferred(get_auth_failure_msg())
         
         @simple_callback
         def callback(data):
@@ -54,11 +62,7 @@ class Commands(object):
             return deferred
     
     def init_handlers(self):
-        get_command_name = lambda name: name.split("handle_")[1]
-        
-        for name in dir(self):
-            if name.startswith("handle_"):
-                self.handlers.update({get_command_name(name): getattr(self, name)})
+        """Populate the dictionary of command handlers."""
         
         internalHandlers = self.get_internal_handlers()
         
@@ -70,11 +74,11 @@ class Commands(object):
                     func = getattr(module, name)
                     func = func.__get__(self, Commands) #bind the first argument
                     
-                    self.handlers.update({get_command_name(name): func})
+                    self.handlers.update({name.split("handle_")[1]: func})
         
-        fileCmds = [os.path.split(x)[1][:-3] for x in glob.glob("handlers/*.py")]
+        scriptHandlers = [os.path.split(x)[1][:-3] for x in glob.glob("handlers/*.py")]
         
-        for file in fileCmds:
+        for file in scriptHandlers:
             self.handlers.update({file: self.run_handler})
     
     def get_internal_handlers(self):
@@ -105,18 +109,6 @@ class Commands(object):
         
         return SubprocessProtocol(cmdline, environ).deferred
     
-    def get_auth_failure_msg(self):
-        return random.choice(Globals.settings.AUTH_FAILURE_MESSAGES)
-    
-    def is_authed(self, environ):
-        return any([environ.get("SKYPE_HANDLE", None) in x[0] for x in Globals.settings.ADMINISTRATORS])
-    
-    def sighup(self, signum, frame):
-        self.handle_reload(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
-    
-    def sigterm(self, signum, frame):
-        self.handle_quit(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
-    
     def translate_sus(self, name):
         """Figure out what to say when someone says 'sus'"""
         
@@ -139,7 +131,11 @@ class Commands(object):
             else:
                 Globals.irc.send_message("error: output too long")
     
-    #handlers
+    def sighup(self, signum, frame):
+        self.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
+    
+    def sigterm(self, signum, frame):
+        self.handlers.get("quit")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
     
     def general(self, _, user, message):
         """Receives every message."""
@@ -155,24 +151,3 @@ class Commands(object):
                 self.send_message("sus %s" % (user,))
         elif all([x in message.lower() for x in [Globals.settings.NICKNAME.lower(), "pls"]]): #GADGET PLS
             self.send_message(random.choice(Globals.settings.PLS_MESSAGES))
-    
-    def handle_help(self, cmd, args, environ):
-        """!help [command name]\nShows you help n' stuff."""
-        
-        if len(args) > 0:
-            name = args[0]
-            
-            try:
-                handler = self.handlers[name]
-            except KeyError:
-                return make_deferred("No such command.")
-            
-            if handler == self.run_handler:
-                return make_deferred("I don't know what {0} does.\ntry !{0} help".format(name))
-            else:
-                if hasattr(handler, "__doc__") and type(handler.__doc__) is str:
-                    return make_deferred(handler.__doc__)
-                else:
-                    return make_deferred("I don't know what {0} does.".format(name))
-        else:
-            return make_deferred("I know about the following commands: " + ", ".join(self.handlers.keys()))
