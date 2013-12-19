@@ -58,6 +58,23 @@ if args.startswith("_="):
 
 result = eval(args, environ, environ)
 
+if type(result) is unicode:
+    result = result.encode("utf-8")
+
+if type(result) is str:
+    result = result.split("\n")
+    
+    for index, line in zip(range(len(result)), result):
+        while line.startswith("/"):
+            line = line[1:]
+        
+        result[index] = line
+    
+    while "" in result:
+        result.remove("")
+    
+    result = "\n".join(result)
+
 if printMode:
     print (result)
 
