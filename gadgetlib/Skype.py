@@ -21,7 +21,6 @@ class SkypeBot(object):
         self.skype = skype4py.Skype(Transport='x11')
         self.skype.Timeout = 5000
         self.skype.FriendlyName = Globals.settings.NICKNAME
-        self.skype.Settings.AutoAway = False
         self.skype.OnMessageStatus = (lambda msg, status: reactor.callFromThread(self.message_handler, msg, status))
         self.skype.OnAttachmentStatus = (lambda status: reactor.callFromThread(self.attachment_status_handler, status))
     
@@ -32,6 +31,7 @@ class SkypeBot(object):
             self.skype.Attach()
             
             self.tavern = self.find_chat()
+            self.skype.Settings.AutoAway = False
         except skype4py.errors.SkypeAPIError:
             print "[Skype] Failed to attach"
             

@@ -2,7 +2,7 @@ import os
 
 from gadgetlib.Commands import SubprocessProtocol
 from gadgetlib.Globals import Globals
-from gadgetlib.handlers import require_auth, make_deferred
+from gadgetlib.handlers import require_auth, make_deferred, simple_callback
 
 @require_auth
 def handle_reload(self, cmd, args, environ):

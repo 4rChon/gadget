@@ -84,7 +84,7 @@ class Commands(object):
     def get_internal_handlers(self):
         internalHandlers = glob.glob("gadgetlib/handlers/*.py")
         
-        for index, file in zip(range(len(internalHandlers)), internalHandlers[:]):
+        for index, file in enumerate(internalHandlers):
             internalHandlers[index] = os.path.split(file)[1][:-3]
         
         internalHandlers.remove("__init__")

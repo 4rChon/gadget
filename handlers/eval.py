@@ -64,7 +64,7 @@ if type(result) is unicode:
 if type(result) is str:
     result = result.split("\n")
     
-    for index, line in zip(range(len(result)), result):
+    for index, line in enumerate(result):
         while line.startswith("/"):
             line = line[1:]
         
