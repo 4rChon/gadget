@@ -7,5 +7,6 @@ class Globals(object):
     skype = None
     irc = None
     globalchat = None
+    twitch = None
 
 Globals = Globals()

@@ -2,23 +2,40 @@ import random
 
 from twisted.internet.defer import Deferred
 
-from gadgetlib import AuthenticationError
+from gadgetlib import AuthenticationError, WaitingForAuthenticationNotice
 from gadgetlib.Globals import Globals
 
 def get_auth_failure_msg():
     return random.choice(Globals.settings.AUTH_FAILURE_MESSAGES)
 
 def is_authed(environ):
-    return any([environ.get("SKYPE_HANDLE", None) in x[0] for x in Globals.settings.ADMINISTRATORS])
+    try:
+        return environ["protocol"].is_authed(environ)
+    except KeyError:
+        print "Warning: is_authed called without protocol in environ dictionary"
+        
+        return False
 
 def require_auth(func):
     """Decorator for checking authentication before running a command."""
     
     def wrapper(self, cmd, args, environ):
-        if not is_authed(environ):
-            return make_deferred(get_auth_failure_msg())
+        authed = is_authed(environ)
+        
+        def complete(result):
+            if not result:
+                return make_deferred(get_auth_failure_msg())
+            else:
+                return func(self, cmd, args, environ)
+        
+        if   type(authed) is bool:
+            return complete(authed)
+        elif authed.__class__ is Deferred: #type(Deferred()) returns <type 'instance'> (Deferred is an old-style class)
+            authed.addCallback(complete) #default callback chaining behaviour returns the usual result from the command handler after verifying authentication
+            
+            raise WaitingForAuthenticationNotice(authed)
         else:
-            return func(self, cmd, args, environ)
+            raise NotImplementedError("require_auth does not know how to handle is_authed return type of %s" % (str(type(authed)),))
     
     return wrapper
 

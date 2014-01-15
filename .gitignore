@@ -1,5 +1,5 @@
 *.pyc
 *.sh
-*.sublime-project
+*.sublime-*
 data/*
 gadget_settings.py

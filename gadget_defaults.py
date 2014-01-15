@@ -16,6 +16,10 @@ IRC_CHANNEL = "#channel"
 
 GLOBALCHAT_ADDRESS = ""
 
+TWITCH_USERNAME = ""
+TWITCH_OATH_TOKEN = "" #visit http://twitchapps.com/tmi/ to generate this
+TWITCH_CHANNELS = [] #list of channel names to join
+
 ECHOER_BIND_ADDRESS = "0.0.0.0:2345" #sends incoming datagrams as messages
 
 #interpreter over ssh, for debugging

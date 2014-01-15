@@ -2,12 +2,13 @@ import glob
 import os
 import random
 import importlib
+import shlex
 from cStringIO import StringIO
 
 from twisted.internet import reactor, protocol
 from twisted.internet.defer import Deferred
 
-from gadgetlib import AuthenticationError
+from gadgetlib import AuthenticationError, WaitingForAuthenticationNotice
 from gadgetlib.Globals import Globals
 from gadgetlib.handlers import require_auth, simple_callback, make_deferred
 
@@ -18,7 +19,7 @@ class SubprocessProtocol(protocol.ProcessProtocol):
         self.deferred = Deferred()
         self.buffer = StringIO()
         
-        reactor.spawnProcess(self, args[0], args, environment)
+        reactor.spawnProcess(self, args[0], args, self.clean_environ(environment))
     
     def outReceived(self, data):
         self.buffer.write(data)
@@ -28,6 +29,16 @@ class SubprocessProtocol(protocol.ProcessProtocol):
     
     def processEnded(self, status):
         self.deferred.callback(self.buffer.getvalue())
+    
+    @staticmethod
+    def clean_environ(environ):
+        """Filter non-string items from environ, as reactor.spawnProcess cannot handle them."""
+        
+        for k, v in environ.items():
+            if type(v) not in [str, unicode]:
+                environ.pop(k)
+        
+        return environ
 
 class Commands(object):
     """Factory for management of command handlers and related tasks."""
@@ -51,6 +62,8 @@ class Commands(object):
             deferred = handler(cmd, args, environ)
         except AuthenticationError:
             deferred = make_deferred(get_auth_failure_msg())
+        except WaitingForAuthenticationNotice as e:
+            deferred = e.args[0]
         
         @simple_callback
         def callback(data):
@@ -58,7 +71,7 @@ class Commands(object):
         
         if deferred:
             deferred.addCallback(callback)
-        
+            
             return deferred
     
     def init_handlers(self):
@@ -102,7 +115,7 @@ class Commands(object):
         else:
             cmdline = "python handlers/%s.py" % (cmd,)
         
-        cmdline = cmdline.split(" ")
+        cmdline = shlex.split(cmdline)
         
         if type(environ["NAME"]) == unicode:
             environ["NAME"] = environ["NAME"].encode("utf-8")
@@ -130,6 +143,13 @@ class Commands(object):
                 Globals.irc.send_message(message)
             else:
                 Globals.irc.send_message("error: output too long")
+    
+    @staticmethod
+    def parse_args(message):
+        args = shlex.split(message)
+        cmd = args[0][1:].lower()
+        
+        return args, cmd
     
     def sighup(self, signum, frame):
         self.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})

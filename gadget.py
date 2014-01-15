@@ -14,6 +14,7 @@ from gadgetlib.Commands import Commands
 from gadgetlib.Skype import SkypeBot
 from gadgetlib.IRC import IrcFactory
 from gadgetlib.GlobalChat import GlobalChatFactory
+from gadgetlib.Twitch import TwitchFactory
 
 realStdout = sys.stdout
 realStderr = sys.stderr
@@ -114,6 +115,9 @@ def main():
         host, port = parse_hostname(Globals.settings.MANHOLE_BIND_ADDRESS)
         
         reactor.listenTCP(port, manhole_factory(globals()), interface=host)
+    
+    if Globals.settings.TWITCH_USERNAME:
+        Globals.twitch = TwitchFactory(Globals.settings.TWITCH_USERNAME, Globals.settings.TWITCH_OATH_TOKEN)
     
     signal.signal(signal.SIGTERM, Globals.commands.sigterm)
     signal.signal(signal.SIGHUP, Globals.commands.sighup)

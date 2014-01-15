@@ -29,7 +29,7 @@ def handle_pull(self, cmd, args, environ):
     
     @simple_callback
     def callback(data):
-        self.handle_reload(None, None, environ)
+        self.handlers["reload"](None, None, environ)
     
     deferred.addCallback(callback)
     

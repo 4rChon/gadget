@@ -5,6 +5,7 @@ from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
 from gadgetlib.Globals import Globals
+from gadgetlib.handlers import make_deferred
 
 class SkypeBot(object):
     """Skype API handler."""
@@ -67,11 +68,11 @@ class SkypeBot(object):
                 Globals.commands.send_message(u"[Skype] \x02%s\x02\u202d: %s" % (msg.FromDisplayName, msg.Body), self)
             
             if msg.Body.startswith(Globals.settings.COMMAND_PREFIX):
-                args = msg.Body.split(" ")
-                cmd = args[0][1:].lower()
+                args, cmd = Globals.commands.parse_args(msg.Body)
                 environ = os.environ.copy()
                 environ["NAME"] = msg.FromDisplayName
                 environ["SKYPE_HANDLE"] = msg.FromHandle
+                environ["protocol"] = self
                 
                 Globals.commands(cmd, args[1:], environ)
             else:
@@ -87,4 +88,4 @@ class SkypeBot(object):
         reactor.callInThread(self.tavern.SendMessage, message)
     
     def is_authed(self, environ):
-        return False #TODO
+        return any([environ.get("SKYPE_HANDLE", None) in x[0] for x in Globals.settings.ADMINISTRATORS])
