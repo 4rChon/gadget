@@ -1,4 +1,5 @@
 import os
+import shlex
 
 from gadgetlib.Commands import SubprocessProtocol
 from gadgetlib.Globals import Globals
@@ -25,7 +26,13 @@ def handle_quit(self, cmd, args, environ):
 def handle_pull(self, cmd, args, environ):
     """!pull\nUpdate from git"""
     
-    deferred = SubprocessProtocol("/usr/bin/git pull origin master".split(" "), os.environ.copy()).deferred
+    return handle_git(self, None, ["pull", "origin", "master"], environ)
+
+@require_auth
+def handle_git(self, cmd, args, environ):
+    """!git <git commands>\nfor fixing 'dem pesky merge conflicts"""
+    
+    deferred = SubprocessProtocol(["/usr/bin/git"] + args, os.environ.copy()).deferred
     
     @simple_callback
     def callback(data):

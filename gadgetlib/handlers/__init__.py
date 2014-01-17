@@ -1,4 +1,5 @@
 import random
+from functools import wraps
 
 from twisted.internet.defer import Deferred
 
@@ -19,6 +20,7 @@ def is_authed(environ):
 def require_auth(func):
     """Decorator for checking authentication before running a command."""
     
+    @wraps(func)
     def wrapper(self, cmd, args, environ):
         authed = is_authed(environ)
         
@@ -46,6 +48,7 @@ def auth_or_die(environ):
 def simple_callback(func):
     """Shortcut for Twisted's Deferred expecting callbacks to return the deferred data."""
     
+    @wraps(func)
     def wrapper(data):
         func(data)
         
