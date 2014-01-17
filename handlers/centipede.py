@@ -11,6 +11,10 @@ def add(word):
     
     print word
 
+def list():
+    with open(PATH, "r") as f:
+        print ", ".join(f.read().split("\n"))
+
 def get():
     try:
         with open(PATH, "r") as f:
@@ -34,8 +38,17 @@ def get():
     print word
 
 if len(sys.argv) > 1:
-    if sys.argv[1].lower() == "add" and len(sys.argv) > 2:
+    getcmd = (lambda: sys.argv[1].lower())
+    
+    if   getcmd() == "add" and len(sys.argv) > 2:
         add(" ".join(sys.argv[2:]))
+    elif getcmd() == "list":
+        list()
+    elif getcmd() in ["rm", "remove", "delete"]:
+        print random.choice(["no",
+                             "ask <ADMIN NAME HERE> or something",
+                             "only on tuesdays (or thursdays if today is tuesday)",
+                             "rm data/centipede.txt\noops, that wasn't a shell"])
     else:
         print "I will not %s" % (sys.argv[1],)
 else:

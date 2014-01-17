@@ -68,13 +68,12 @@ class SkypeBot(object):
                 Globals.commands.send_message(u"[Skype] \x02%s\x02\u202d: %s" % (msg.FromDisplayName, msg.Body), self)
             
             if msg.Body.startswith(Globals.settings.COMMAND_PREFIX):
-                args, cmd = Globals.commands.parse_args(msg.Body)
-                environ = os.environ.copy()
+                cmd, args = Globals.commands.parse_args(msg.Body)
+                environ = Globals.commands.get_environment(self, None)
                 environ["NAME"] = msg.FromDisplayName
                 environ["SKYPE_HANDLE"] = msg.FromHandle
-                environ["protocol"] = self
                 
-                Globals.commands(cmd, args[1:], environ)
+                Globals.commands(cmd, args, environ)
             else:
                 Globals.commands.general(self, msg.FromDisplayName, msg.Body)
     

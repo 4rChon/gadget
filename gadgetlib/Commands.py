@@ -3,6 +3,7 @@ import os
 import random
 import importlib
 import shlex
+import re
 from cStringIO import StringIO
 
 from twisted.internet import reactor, protocol
@@ -45,6 +46,7 @@ class Commands(object):
     
     def __init__(self):
         self.handlers = {}
+        self.scriptHandlers = {}
         
         self.init_handlers()
     
@@ -89,10 +91,16 @@ class Commands(object):
                     
                     self.handlers.update({name.split("handle_")[1]: func})
         
-        scriptHandlers = [os.path.split(x)[1][:-3] for x in glob.glob("handlers/*.py")]
+        regex = re.compile(r"handlers/([\w\-]+)\.([\w\-]+)$")
         
-        for file in scriptHandlers:
-            self.handlers.update({file: self.run_handler})
+        for file in glob.iglob("handlers/*"):
+            parsed = regex.match(file)
+            
+            if parsed:
+                groups = parsed.groups()
+                
+                self.handlers.update({groups[0]: self.run_handler})
+                self.scriptHandlers.update({groups[0]: "%s.%s" % (groups[0], groups[1])})
     
     def get_internal_handlers(self):
         internalHandlers = glob.glob("gadgetlib/handlers/*.py")
@@ -107,18 +115,17 @@ class Commands(object):
     def run_handler(self, cmd, args, environ):
         """Runs a handler script."""
         
-        if not os.path.exists("handlers/%s.py" % (cmd,)):
-            return "Don't know how to %s" % (cmd,)
+        cmdline = "./handlers/%s" % (self.scriptHandlers[cmd],)
         
-        if len(args) > 0:
-            cmdline = "python handlers/%s.py %s" % (cmd, " ".join(args))
-        else:
-            cmdline = "python handlers/%s.py" % (cmd,)
+        if len(args) > 1:
+            cmdline += " %s" % (" ".join(args),) #TODO: better solution
         
         cmdline = shlex.split(cmdline)
         
         if type(environ["NAME"]) == unicode:
             environ["NAME"] = environ["NAME"].encode("utf-8")
+        
+        environ.update(os.environ)
         
         return SubprocessProtocol(cmdline, environ).deferred
     
@@ -146,10 +153,21 @@ class Commands(object):
     
     @staticmethod
     def parse_args(message):
+        """Parse a command message, returning command name and arguments."""
+        
         args = shlex.split(message)
         cmd = args[0][1:].lower()
+        args = args[1:]
         
-        return args, cmd
+        return cmd, args
+    
+    @staticmethod
+    def get_environment(protocol, sourceInfo=None):
+        """Returns environment (message context) dict."""
+        
+        environ = {"protocol": protocol, "source": sourceInfo}
+        
+        return environ
     
     def sighup(self, signum, frame):
         self.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})

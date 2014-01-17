@@ -31,12 +31,11 @@ class IrcBot(IRCClient):
                 Globals.commands.send_message(u"[IRC] \x02%s\x02\u202d: %s" % (name, message), self.factory)
             
             if message.startswith(Globals.settings.COMMAND_PREFIX):
-                args, cmd = Globals.commands.parse_args(message)
-                environ = os.environ.copy()
+                cmd, args = Globals.commands.parse_args(message)
+                environ = Globals.commands.get_environment(self.factory, channel)
                 environ["NAME"] = name
-                environ["protocol"] = self.factory
                 
-                Globals.commands(cmd, args[1:], environ)
+                Globals.commands(cmd, args, environ)
             else:
                 Globals.commands.general(self.factory, user, message)
             
