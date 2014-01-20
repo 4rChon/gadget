@@ -48,6 +48,9 @@ class SubprocessProtocol(protocol.ProcessProtocol):
         for k, v in environ.items():
             if type(v) not in [str, unicode]:
                 environ.pop(k)
+            
+            if type(v) is unicode:
+                environ[k] = v.encode("utf-8")
         
         return environ
 
@@ -139,15 +142,7 @@ class Commands(object):
     def run_handler(self, cmd, args, environ):
         """Runs a handler script."""
         
-        cmdline = "./handlers/%s" % (self.scriptPaths[cmd],)
-        
-        if len(args) > 1:
-            cmdline += " %s" % (" ".join(args),) #TODO: better solution
-        
-        cmdline = shlex.split(cmdline)
-        
-        if type(environ["NAME"]) == unicode:
-            environ["NAME"] = environ["NAME"].encode("utf-8")
+        cmdline = ["./handlers/%s" % (self.scriptHandlers[cmd],)] + args
         
         environ.update(os.environ)
         
