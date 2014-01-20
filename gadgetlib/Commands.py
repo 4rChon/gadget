@@ -11,7 +11,7 @@ from twisted.internet.defer import Deferred
 
 from gadgetlib import AuthenticationError, WaitingForAuthenticationNotice
 from gadgetlib.Globals import Globals
-from gadgetlib.Messages import 
+from gadgetlib.Messages import subscribe_incoming
 from gadgetlib.handlers import require_auth, simple_callback, make_deferred
 
 def parse_args(body):
@@ -63,6 +63,7 @@ class Commands(object):
         self.receivers = [] #list of protocols that are subscribed to global messages
         
         self.init_handlers()
+        subscribe_incoming(self.handle_incoming)
     
     def handle_command(self, cmd, args, context):
         try:

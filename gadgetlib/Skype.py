@@ -17,8 +17,8 @@ class SkypeBot(object):
         self.skype = None
         self.reattacher = LoopingCall(self.reattach)
         
-        self.
         self.reattacher.start(self.REATTACH_TIMEOUT)
+        subscribe(self)
     
     def make_skype(self):
         self.skype = skype4py.Skype(Transport='x11')

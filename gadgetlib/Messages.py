@@ -12,7 +12,7 @@ def subscribe_incoming(func):
     
     _incomingSubscribers.append(func)
 
-def send_message(context):
+def send_message(context): #TODO: whitelist support
     for protocol in _subscribers:
         if protocol != context["protocol"]:
             protocol.send_message(context)
@@ -38,5 +38,6 @@ def make_context(protocol, source, body, **kwargs):
 
 def _send_global(context):
     if context.get("global"):
+        send_message(context)
 
 subscribe_incoming(_send_global)
