@@ -46,7 +46,8 @@ class Commands(object):
     
     def __init__(self):
         self.handlers = {}
-        self.scriptHandlers = {}
+        self.scriptPaths = {}
+        self.receivers = [] #list of protocols that are subscribed to global messages
         
         self.init_handlers()
     
@@ -100,7 +101,7 @@ class Commands(object):
                 groups = parsed.groups()
                 
                 self.handlers.update({groups[0]: self.run_handler})
-                self.scriptHandlers.update({groups[0]: "%s.%s" % (groups[0], groups[1])})
+                self.scriptPaths.update({groups[0]: "%s.%s" % (groups[0], groups[1])})
     
     def get_internal_handlers(self):
         internalHandlers = glob.glob("gadgetlib/handlers/*.py")
@@ -115,7 +116,7 @@ class Commands(object):
     def run_handler(self, cmd, args, environ):
         """Runs a handler script."""
         
-        cmdline = "./handlers/%s" % (self.scriptHandlers[cmd],)
+        cmdline = "./handlers/%s" % (self.scriptPaths[cmd],)
         
         if len(args) > 1:
             cmdline += " %s" % (" ".join(args),) #TODO: better solution
@@ -173,6 +174,7 @@ class Commands(object):
         self.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
     
     def sigterm(self, signum, frame):
+        self.send_message()
         self.handlers.get("quit")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
     
     def general(self, _, user, message):
