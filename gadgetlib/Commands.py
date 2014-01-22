@@ -160,7 +160,8 @@ class Commands(object):
     def run_handler(self, cmd, args, context):
         """Runs a handler script."""
         
-        cmdline = ["./handlers/%s" % (self.scriptHandlers[cmd],)] + args
+        cmdline = ["./handlers/%s" % (self.scriptPaths[cmd],)] + args
+        context = context.copy()
         
         context.update(os.environ)
         

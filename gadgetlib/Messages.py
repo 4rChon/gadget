@@ -16,23 +16,26 @@ def subscribe_incoming(func):
 def send_message(context, exclude=None):
     """Delivers outgoing messages to protocols."""
     
-    for protocol in _subscribers:
-        if protocol == exclude:
-            continue
+    if context.get("isGlobal"):
+        context.update({"source": None})
         
-        tmpContext = context.copy()
-        
-        if not context.get("isFormatted"):
-            try:
-                format = getattr(protocol, "format_message")
-            except AttributeError:
-                format = default_format
+        for protocol in _subscribers:
+            if protocol == exclude:
+                continue
             
-            tmpContext = format(context)
-        
-        tmpContext.update({"source": None})
-        
-        protocol.send_message(tmpContext)
+            tmpContext = context.copy()
+            
+            if not context.get("isFormatted"):
+                try:
+                    format = getattr(protocol, "format_message")
+                except AttributeError:
+                    format = default_format
+                
+                tmpContext = format(context)
+            
+            protocol.send_message(tmpContext)
+    else:
+        context.get("protocol").send_message(context)
 
 def send_global(body):
     """Sends a message to all subscribed protocols."""
@@ -50,7 +53,7 @@ def handle_message(context):
     
     try:
         for callback in _incomingSubscribers:
-            context = callback(context) or context
+            callback(context.copy())
     except StopIteration:
         pass
 

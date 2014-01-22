@@ -22,15 +22,16 @@ class IrcBot(IRCClient):
     
     def privmsg(self, user, channel, message, action=False):
         name = user.split("!")[0]
+        isGlobal = (channel in self.factory.channels)
         
         handle_message(
             make_context(
                 protocol=self.factory,
-                source=channel,
+                source=channel if isGlobal else name,
                 name=name,
                 body=message,
                 isEmote=action,
-                isGlobal=(channel in self.factory.channels),
+                isGlobal=isGlobal,
             )
         )
     
@@ -96,7 +97,7 @@ class IRC(protocol.ClientFactory):
             channels = self.channels
         
         cmd = context.get("body").split(" ")[0][1:].lower()
-        func = self.client.say
+        func = self.client.msg
         
         if context.get("body").startswith("/"):
             if   cmd == "topic":

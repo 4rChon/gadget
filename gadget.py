@@ -94,22 +94,12 @@ def parse_hostname(string):
         raise SystemExit
 
 def sighup(signum, frame): #reload
-    send_global("brb systemd is being a dick")
-    
-    def callback():
-        Globals.running = False
-        Globals.restart = True
-    
-    reactor.callLater(1, callback)
+    Globals.running = False
+    Globals.restart = True
 
 def sigquit(signum, frame): #quit
-    send_global("oh god help they're trying to kill me")
-    
-    def callback():
-        Globals.running = False
-        Globals.restart = False
-    
-    reactor.callLater(1, callback)
+    Globals.running = False
+    Globals.restart = False
 
 def main():
     if not os.path.exists("data/"):
@@ -142,7 +132,6 @@ def main():
     signal.signal(signal.SIGQUIT, sigquit)
     signal.signal(signal.SIGHUP, sighup)
     LoopingCall(reactor_step).start(1)
-    reactor.callLater(5, send_global, "hello there")
     reactor.run()
     
     if Globals.restart:
