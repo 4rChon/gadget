@@ -4,7 +4,7 @@ from twisted.internet import reactor, protocol
 from twisted.words.protocols.irc import IRCClient
 
 from gadgetlib.Globals import Globals
-from gadgetlib.Messages import subscribe, default_format, send_global
+from gadgetlib.Messages import subscribe, default_format, send_global, handle_message, make_context
 
 class IrcBot(IRCClient):
     """IRC protocol manager."""
@@ -93,7 +93,7 @@ class IRC(protocol.ClientFactory):
         if   source:
             channels = [source]
         elif context.get("isGlobal"):
-            channels = self.factory.channels
+            channels = self.channels
         
         cmd = context.get("body").split(" ")[0][1:].lower()
         func = self.client.say

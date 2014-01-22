@@ -23,8 +23,14 @@ def send_message(context, exclude=None):
         tmpContext = context.copy()
         
         if not context.get("isFormatted"):
-            format = getattr(protocol, "format_message") or default_format
+            try:
+                format = getattr(protocol, "format_message")
+            except AttributeError:
+                format = default_format
+            
             tmpContext = format(context)
+        
+        tmpContext.update({"source": None})
         
         protocol.send_message(tmpContext)
 

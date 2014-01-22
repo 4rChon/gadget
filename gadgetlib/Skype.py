@@ -96,7 +96,10 @@ class Skype(object):
                 chats = [chat for chat in self.skype.Chats if self.accountName not in chat.Name]
             
             for chat in chats:
-                chat.SendMessage(context.get("body"))
+                try:
+                    chat.SendMessage(context.get("body"))
+                except skype4py.errors.SkypeError:
+                    pass
         
         reactor.callInThread(send, context)
     
