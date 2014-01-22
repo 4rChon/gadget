@@ -76,7 +76,9 @@ class SkypeBot(object):
                     body=msg.Body,
                     skypeHandle=msg.FromHandle,
                     isEmote=emote,
-                    isGlobal=(self.accountName not in msg.ChatName)))
+                    isGlobal=(self.accountName not in msg.ChatName),
+                )
+            )
     
     def attachment_status_handler(self, status):
         global retrySkypeAttach
@@ -86,14 +88,18 @@ class SkypeBot(object):
     
     def send_message(self, context):
         def send(context):
-            chat = self.find_chat(context["source"])
+            source = context.get("source")
+            chats = []
             
-            chat.sendMessage(self.format_message(context))
+            if   source:
+                chats = [self.find_chat(source)]
+            elif context.get("isGlobal"):
+                chats = [chat for chat in self.skype.Chats if self.accountName not in chat.Name]
+            
+            for chat in chats:
+                chat.SendMessage(context["body"])
         
         reactor.callInThread(send, context)
     
     def is_authed(self, context):
         return any([context.get("skypeHandle") in x[0] for x in Globals.settings.ADMINISTRATORS])
-    
-    def format_message(self, context):
-        return "[Skype] %s: %s" % (context["name"], context["body"])

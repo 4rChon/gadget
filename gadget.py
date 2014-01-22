@@ -15,7 +15,7 @@ from gadgetlib.Skype import SkypeBot
 from gadgetlib.IRC import IrcFactory
 from gadgetlib.GlobalChat import GlobalChatFactory
 from gadgetlib.Twitch import TwitchFactory
-from gadgetlib.Messages import send_message
+from gadgetlib.Messages import send_global
 
 realStdout = sys.stdout
 realStderr = sys.stderr
@@ -94,11 +94,11 @@ def parse_hostname(string):
         raise SystemExit
 
 def sighup(signum, frame):
-    send_message("brb systemd is being a dick")
+    send_global("brb systemd is being a dick")
     Globals.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
 
 def sigterm(signum, frame):
-    send_message("oh god help they're trying to kill me")
+    send_global("oh god help they're trying to kill me")
     Globals.handlers.get("quit")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
 
 def main():
@@ -140,7 +140,7 @@ class Echoer(protocol.DatagramProtocol):
     """Listens for datagrams, and sends them as messages."""
     
     def datagramReceived(self, data, (host, port)):
-        send_message(data)
+        send_global(data)
 
 if __name__ == '__main__':
     main()

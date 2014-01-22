@@ -13,13 +13,36 @@ def subscribe_incoming(func):
     
     _incomingSubscribers.append(func)
 
-def send_message(context):
-    if type(context) is str:
-        context = {"body": context, "name": "Gadget", "protocol": None}
+def default_format(context):
+    res = filter_unicode("[%s] %s: %s" % (context["protocol"].__class__.__name__,
+                                          context["name"],
+                                          context["body"]))
     
+    context.update({"body": res, "isFormatted": True})
+    
+    return context
+
+def send_message(context, exclude=None):
     for protocol in _subscribers:
-        if protocol != context["protocol"]:
-            protocol.send_message(context)
+        if protocol == exclude:
+            continue
+        
+        tmpContext = context.copy()
+        
+        if not context["isFormatted"]:
+            format = getattr(protocol, "format_message") or default_format
+            tmpContext = format(context)
+        
+        protocol.send_message(tmpContext)
+
+def send_global(body):
+    context = {}
+    
+    context.update({"body": body,
+                   "protocol": None,
+                   "isGlobal": True,
+                   "isFormatted": True})
+    send_message(context)
 
 def handle_message(context):
     try:
@@ -36,13 +59,14 @@ def make_context(protocol, source, name, body, **kwargs):
                    "name": filter_unicode(name),
                    "body": filter_unicode(body)})
     result.update({"isGlobal": True,
-                   "isEmote": False})
+                   "isEmote": False,
+                   "isFormatted": False})
     result.update(kwargs)
     
     return result
 
-def _send_global(context):
+def send_all_msgs(context):
     if context.get("isGlobal"):
-        send_message(context)
+        send_message(context, exclude=context.get("protocol"))
 
-subscribe_incoming(_send_global)
+subscribe_incoming(send_all_msgs)

@@ -60,6 +60,7 @@ class Commands(object):
     def __init__(self):
         self.handlers = {}
         self.scriptPaths = {}
+        self.currentContext = None
         
         self.init_handlers()
         subscribe_incoming(self.handle_incoming)
@@ -80,6 +81,8 @@ class Commands(object):
             raise StopIteration
     
     def handle_command(self, cmd, args, context):
+        self.currentContext = context
+        
         try:
             handler = self.handlers[cmd]
         except KeyError:
@@ -139,11 +142,17 @@ class Commands(object):
         
         return internalHandlers
     
-    def run_handler(self, cmd, args, environ):
+    def run_handler(self, cmd, args, context):
         """Runs a handler script."""
         
         cmdline = ["./handlers/%s" % (self.scriptHandlers[cmd],)] + args
         
-        environ.update(os.environ)
+        context.update(os.context)
         
-        return SubprocessProtocol(cmdline, environ).deferred
+        return SubprocessProtocol(cmdline, context).deferred
+    
+    def send_message(self, msg):
+        context = self.currentContext.copy()
+        
+        context.update({"isFormatted": True, "body": msg})
+        send_message(context)
