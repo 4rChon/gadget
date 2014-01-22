@@ -54,13 +54,28 @@ class SubprocessProtocol(protocol.ProcessProtocol):
         
         return environ
 
+class SendMessageProxy(object):
+    def __init__(self, context):
+        self.context = context
+        
+    def __getattr__(self, attr):
+        if attr == "send_message":
+            return self.send_message
+        else:
+            return getattr(Globals.commands, attr)
+    
+    def send_message(self, msg):
+        context = self.context.copy()
+        
+        context.update({"isFormatted": True, "body": msg})
+        send_message(context)
+
 class Commands(object):
     """Factory for management of command handlers and related tasks."""
     
     def __init__(self):
         self.handlers = {}
         self.scriptPaths = {}
-        self.currentContext = None
         
         self.init_handlers()
         subscribe_incoming(self.handle_incoming)
@@ -81,8 +96,6 @@ class Commands(object):
             raise StopIteration
     
     def handle_command(self, cmd, args, context):
-        self.currentContext = context
-        
         try:
             handler = self.handlers[cmd]
         except KeyError:
@@ -90,8 +103,10 @@ class Commands(object):
             
             return
         
+        proxy = SendMessageProxy(context)
+        
         try:
-            deferred = handler(cmd, args, context)
+            deferred = handler(proxy, cmd, args, context)
         except AuthenticationError:
             deferred = make_deferred(get_auth_failure_msg())
         except WaitingForAuthenticationNotice as e:
@@ -99,7 +114,7 @@ class Commands(object):
         
         @simple_callback
         def callback(data):
-            self.send_message(data)
+            proxy.send_message(data)
         
         if deferred:
             deferred.addCallback(callback)
@@ -117,7 +132,6 @@ class Commands(object):
             for name in dir(module):
                 if name.startswith("handle_"):
                     func = getattr(module, name)
-                    func = func.__get__(self, Commands) #bind the first argument
                     
                     self.handlers.update({name.split("handle_")[1]: func})
         
@@ -142,6 +156,7 @@ class Commands(object):
         
         return internalHandlers
     
+    @staticmethod
     def run_handler(self, cmd, args, context):
         """Runs a handler script."""
         
@@ -150,9 +165,3 @@ class Commands(object):
         context.update(os.environ)
         
         return SubprocessProtocol(cmdline, context).deferred
-    
-    def send_message(self, msg):
-        context = self.currentContext.copy()
-        
-        context.update({"isFormatted": True, "body": msg})
-        send_message(context)
