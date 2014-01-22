@@ -26,13 +26,7 @@ def handle_quit(self, cmd, args, environ):
 def handle_pull(self, cmd, args, environ):
     """!pull\nUpdate from git"""
     
-    return handle_git(self, None, ["pull", "origin", "master"], environ)
-
-@require_auth
-def handle_git(self, cmd, args, environ):
-    """!git <git commands>\nfor fixing 'dem pesky merge conflicts"""
-    
-    deferred = SubprocessProtocol(["/usr/bin/git"] + args, os.environ.copy()).deferred
+    deferred = handle_git(self, None, ["pull", "origin", "master"], environ)
     
     @simple_callback
     def callback(data):
@@ -41,3 +35,9 @@ def handle_git(self, cmd, args, environ):
     deferred.addCallback(callback)
     
     return deferred
+
+@require_auth
+def handle_git(self, cmd, args, environ):
+    """!git <git commands>\nfor fixing 'dem pesky merge conflicts"""
+    
+    return SubprocessProtocol(["/usr/bin/git"] + args, os.environ.copy()).deferred

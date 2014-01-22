@@ -147,7 +147,7 @@ class Commands(object):
         
         cmdline = ["./handlers/%s" % (self.scriptHandlers[cmd],)] + args
         
-        context.update(os.context)
+        context.update(os.environ)
         
         return SubprocessProtocol(cmdline, context).deferred
     
