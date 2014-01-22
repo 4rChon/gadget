@@ -142,6 +142,7 @@ def main():
     signal.signal(signal.SIGQUIT, sigquit)
     signal.signal(signal.SIGHUP, sighup)
     LoopingCall(reactor_step).start(1)
+    reactor.callLater(5, send_global, "hello there")
     reactor.run()
     
     if Globals.restart:
