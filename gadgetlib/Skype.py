@@ -5,6 +5,7 @@ from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
 from gadgetlib.Globals import Globals
+from gadgetlib.Messages import subscribe, handle_message, make_context
 from gadgetlib.handlers import make_deferred
 
 class SkypeBot(object):
@@ -16,6 +17,7 @@ class SkypeBot(object):
         self.skype = None
         self.reattacher = LoopingCall(self.reattach)
         
+        self.
         self.reattacher.start(self.REATTACH_TIMEOUT)
     
     def make_skype(self):
@@ -60,22 +62,28 @@ class SkypeBot(object):
     
     def message_handler(self, msg, status):
         if status == skype4py.cmsReceived:
-            if msg.Type == skype4py.cmeEmoted:
-                Globals.commands.send_message(u"[Skype] *\x02%s\x02\u202d %s*" % (msg.FromDisplayName.replace("\u202e", ""), msg.Body), self)
-                
-                return
-            else:
-                Globals.commands.send_message(u"[Skype] \x02%s\x02\u202d: %s" % (msg.FromDisplayName, msg.Body), self)
+            emote = False
             
-            if msg.Body.startswith(Globals.settings.COMMAND_PREFIX):
-                cmd, args = Globals.commands.parse_args(msg.Body)
-                environ = Globals.commands.get_environment(self, None)
+            if msg.Type == skype4py.cmeEmoted:
+                emote = True
+            
+            handle_message(
+                make_context(
+                    protocol=self,
+                    source=None, #TODO
+                    body=msg.Body,
+                    NAME=msg.FromDisplayName,
+                    SKYPE_HANDLE=msg.FromHandle,
+                    isEmote=emote))
+            
+            """if msg.Body.startswith(Globals.settings.COMMAND_PREFIX):
+                handle_message(make_context)
                 environ["NAME"] = msg.FromDisplayName
                 environ["SKYPE_HANDLE"] = msg.FromHandle
                 
                 Globals.commands(cmd, args, environ)
             else:
-                Globals.commands.general(self, msg.FromDisplayName, msg.Body)
+                Globals.commands.general(self, msg.FromDisplayName, msg.Body)"""
     
     def attachment_status_handler(self, status):
         global retrySkypeAttach
@@ -83,8 +91,8 @@ class SkypeBot(object):
         if status == skype4py.apiAttachAvailable:
             retrySkypeAttach = True
     
-    def send_message(self, message):
-        reactor.callInThread(self.tavern.SendMessage, message)
+    def send_message(self, context):
+        reactor.callInThread(self.tavern.SendMessage, context["body"])
     
     def is_authed(self, environ):
         return any([environ.get("SKYPE_HANDLE", None) in x[0] for x in Globals.settings.ADMINISTRATORS])

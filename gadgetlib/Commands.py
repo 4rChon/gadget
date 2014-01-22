@@ -11,7 +11,17 @@ from twisted.internet.defer import Deferred
 
 from gadgetlib import AuthenticationError, WaitingForAuthenticationNotice
 from gadgetlib.Globals import Globals
+from gadgetlib.Messages import 
 from gadgetlib.handlers import require_auth, simple_callback, make_deferred
+
+def parse_args(body):
+    """Parse a command message, returning command name and arguments."""
+    
+    args = shlex.split(body)
+    cmd = args[0][1:].lower()
+    args = args[1:]
+    
+    return cmd, args
 
 class SubprocessProtocol(protocol.ProcessProtocol):
     """Twisted-friendly subprocess."""
@@ -51,9 +61,7 @@ class Commands(object):
         
         self.init_handlers()
     
-    def __call__(self, cmd, args, environ):
-        """Called by protocol interfaces to notify us of command messages."""
-        
+    def handle_command(self, cmd, args, context):
         try:
             handler = self.handlers[cmd]
         except KeyError:
@@ -62,7 +70,7 @@ class Commands(object):
             return
         
         try:
-            deferred = handler(cmd, args, environ)
+            deferred = handler(cmd, args, context)
         except AuthenticationError:
             deferred = make_deferred(get_auth_failure_msg())
         except WaitingForAuthenticationNotice as e:
@@ -76,6 +84,21 @@ class Commands(object):
             deferred.addCallback(callback)
             
             return deferred
+    
+    def handle_incoming(self, context):
+        """Scan incoming messages for commands."""
+        
+        body = context["body"]
+        
+        if context.get("isEmote"):
+            return
+        
+        if body.startswith(Globals.settings.COMMAND_PREFIX):
+            cmd, args = parse_args(body)
+            
+            self.handle_command(cmd, args, context)
+            
+            raise StopIteration
     
     def init_handlers(self):
         """Populate the dictionary of command handlers."""
@@ -139,19 +162,6 @@ class Commands(object):
         
         return None
     
-    def send_message(self, message, exclude=None):
-        if type(message) is unicode:
-            message = message.encode("utf-8")
-        
-        if exclude != Globals.skype:
-            Globals.skype.send_message(message)
-        
-        if exclude != Globals.irc:
-            if len(message) < 1500:
-                Globals.irc.send_message(message)
-            else:
-                Globals.irc.send_message("error: output too long")
-    
     @staticmethod
     def parse_args(message):
         """Parse a command message, returning command name and arguments."""
@@ -162,19 +172,12 @@ class Commands(object):
         
         return cmd, args
     
-    @staticmethod
-    def get_environment(protocol, sourceInfo=None):
-        """Returns environment (message context) dict."""
-        
-        environ = {"protocol": protocol, "source": sourceInfo}
-        
-        return environ
-    
     def sighup(self, signum, frame):
+        self.send_message("brb systemd is being a dick")
         self.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
     
     def sigterm(self, signum, frame):
-        self.send_message()
+        self.send_message("oh god help they're trying to kill me")
         self.handlers.get("quit")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
     
     def general(self, _, user, message):

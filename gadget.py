@@ -99,25 +99,26 @@ def main():
     Globals.settings = get_settings()
     Globals.commands = Commands()
     Globals.skype = SkypeBot()
+    cfg = Globals.settings
     
-    if Globals.settings.IRC_ADDRESS:
-        Globals.irc = IrcFactory(Globals.settings.NICKNAME, *parse_hostname(Globals.settings.IRC_ADDRESS), channel=Globals.settings.IRC_CHANNEL)
+    #if cfg.IRC_ADDRESS:
+    #    Globals.irc = IrcFactory(cfg.NICKNAME, *parse_hostname(cfg.IRC_ADDRESS), channel=cfg.IRC_CHANNEL)
+    #
+    #if cfg.GLOBALCHAT_ADDRESS:
+    #    Globals.globalchat = GlobalChatFactory(*parse_hostname(cfg.GLOBALCHAT_ADDRESS))
     
-    if Globals.settings.GLOBALCHAT_ADDRESS:
-        Globals.globalchat = GlobalChatFactory(*parse_hostname(Globals.settings.GLOBALCHAT_ADDRESS))
-    
-    if Globals.settings.ECHOER_BIND_ADDRESS:
-        host, port = parse_hostname(Globals.settings.ECHOER_BIND_ADDRESS)
+    if cfg.ECHOER_BIND_ADDRESS:
+        host, port = parse_hostname(cfg.ECHOER_BIND_ADDRESS)
         
         reactor.listenUDP(port, Echoer(), interface=host)
     
-    if Globals.settings.MANHOLE_BIND_ADDRESS:
-        host, port = parse_hostname(Globals.settings.MANHOLE_BIND_ADDRESS)
+    if cfg.MANHOLE_BIND_ADDRESS:
+        host, port = parse_hostname(cfg.MANHOLE_BIND_ADDRESS)
         
         reactor.listenTCP(port, manhole_factory(globals()), interface=host)
     
-    if Globals.settings.TWITCH_USERNAME:
-        Globals.twitch = TwitchFactory(Globals.settings.TWITCH_USERNAME, Globals.settings.TWITCH_OATH_TOKEN)
+    if cfg.TWITCH_USERNAME:
+        Globals.twitch = TwitchFactory(cfg.TWITCH_USERNAME, cfg.TWITCH_OATH_TOKEN)
     
     signal.signal(signal.SIGTERM, Globals.commands.sigterm)
     signal.signal(signal.SIGHUP, Globals.commands.sighup)
