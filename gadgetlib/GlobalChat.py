@@ -13,7 +13,7 @@ class GlobalChatProtocol(basic.LineReceiver):
         if line.startswith("<"):
             Globals.commands.send_message(line)
 
-class GlobalChatFactory(protocol.ClientFactory):
+class GlobalChat(protocol.ClientFactory):
     def __init__(self, host, port):
         reactor.connectTCP(host, port, self)
     

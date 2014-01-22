@@ -1,4 +1,4 @@
-from gadgetlib import filter_unicode
+from gadgetlib.Globals import Globals
 
 _subscribers = []
 _incomingSubscribers = []
@@ -13,7 +13,60 @@ def subscribe_incoming(func):
     
     _incomingSubscribers.append(func)
 
+def send_message(context, exclude=None):
+    """Delivers outgoing messages to protocols."""
+    
+    for protocol in _subscribers:
+        if protocol == exclude:
+            continue
+        
+        tmpContext = context.copy()
+        
+        if not context.get("isFormatted"):
+            format = getattr(protocol, "format_message") or default_format
+            tmpContext = format(context)
+        
+        protocol.send_message(tmpContext)
+
+def send_global(body):
+    """Sends a message to all subscribed protocols."""
+    
+    context = {}
+    
+    context.update({"body": body,
+                    "protocol": None,
+                    "isGlobal": True,
+                    "isFormatted": True})
+    send_message(context)
+
+def handle_message(context):
+    """Called by protocols when a message is received."""
+    
+    try:
+        for callback in _incomingSubscribers:
+            context = callback(context) or context
+    except StopIteration:
+        pass
+
+def make_context(protocol, source, name, body, **kwargs):
+    """Builds a context dictionary."""
+    
+    result = {}
+    
+    result.update({"protocol": protocol,
+                   "source": source,
+                   "name": name,
+                   "body": body})
+    result.update({"isGlobal": True,
+                   "isEmote": False,
+                   "isFormatted": False})
+    result.update(kwargs)
+    
+    return result
+
 def default_format(context):
+    """Performs default formatting of messages."""
+    
     res = filter_unicode("[%s] %s: %s" % (context["protocol"].__class__.__name__,
                                           context["name"],
                                           context["body"]))
@@ -22,48 +75,15 @@ def default_format(context):
     
     return context
 
-def send_message(context, exclude=None):
-    for protocol in _subscribers:
-        if protocol == exclude:
-            continue
-        
-        tmpContext = context.copy()
-        
-        if not context["isFormatted"]:
-            format = getattr(protocol, "format_message") or default_format
-            tmpContext = format(context)
-        
-        protocol.send_message(tmpContext)
-
-def send_global(body):
-    context = {}
+#local functions
+def filter_unicode(str):
+    for char in Globals.settings.UNICODE_BLACKLIST:
+        str.replace(char, "")
     
-    context.update({"body": body,
-                   "protocol": None,
-                   "isGlobal": True,
-                   "isFormatted": True})
-    send_message(context)
-
-def handle_message(context):
-    try:
-        for callback in _incomingSubscribers:
-            context = callback(context) or context
-    except StopIteration:
-        pass
-
-def make_context(protocol, source, name, body, **kwargs):
-    result = {}
+    if type(str) is unicode:
+        str = str.encode("utf-8")
     
-    result.update({"protocol": protocol,
-                   "source": source,
-                   "name": filter_unicode(name),
-                   "body": filter_unicode(body)})
-    result.update({"isGlobal": True,
-                   "isEmote": False,
-                   "isFormatted": False})
-    result.update(kwargs)
-    
-    return result
+    return str
 
 def send_all_msgs(context):
     if context.get("isGlobal"):

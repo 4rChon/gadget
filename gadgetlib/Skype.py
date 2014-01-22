@@ -4,12 +4,11 @@ import Skype4Py as skype4py
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
-from gadgetlib import filter_unicode
 from gadgetlib.Globals import Globals
 from gadgetlib.Messages import subscribe, handle_message, make_context
 from gadgetlib.handlers import make_deferred
 
-class SkypeBot(object):
+class Skype(object):
     """Skype API handler."""
     
     REATTACH_TIMEOUT = 60*60*1
@@ -97,7 +96,7 @@ class SkypeBot(object):
                 chats = [chat for chat in self.skype.Chats if self.accountName not in chat.Name]
             
             for chat in chats:
-                chat.SendMessage(context["body"])
+                chat.SendMessage(context.get("body"))
         
         reactor.callInThread(send, context)
     

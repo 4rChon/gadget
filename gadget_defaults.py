@@ -5,14 +5,11 @@ ADMINISTRATORS = [ #people with access to commands such as !reload
     ("skype name", "irc mask", "steamid"),
 ]
 
-#handle for the skype conversation to bind to
-SKYPE_CONVERSATION_ID = ""
-
 ##connection information
 ##a blank address disables the server
 
 IRC_ADDRESS = "localhost:6667"
-IRC_CHANNEL = "#channel"
+IRC_CHANNELS = ["#channel"]
 
 GLOBALCHAT_ADDRESS = ""
 

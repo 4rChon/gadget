@@ -4,6 +4,7 @@ from twisted.internet import reactor, protocol
 from twisted.words.protocols.irc import IRCClient
 
 from gadgetlib.Globals import Globals
+from gadgetlib.Messages import subscribe, default_format, send_global
 
 class IrcBot(IRCClient):
     """IRC protocol manager."""
@@ -13,63 +14,57 @@ class IrcBot(IRCClient):
         self.nickname = self.factory.nick
     
     def signedOn(self):
-        self.join(self.factory.channel)
+        for channel in self.factory.channels:
+            self.join(channel)
     
     def noticed(self, user, channel, message):
         pass
     
     def privmsg(self, user, channel, message, action=False):
-        #no privmsgs pls
-        if channel == self.factory.channel:
-            name = user.split("!")[0]
-            
-            if action:
-                Globals.commands.send_message(u"[IRC] *\x02%s\x02\u202d %s*" % (name, message), self.factory)
-                
-                return
-            else:
-                Globals.commands.send_message(u"[IRC] \x02%s\x02\u202d: %s" % (name, message), self.factory)
-            
-            if message.startswith(Globals.settings.COMMAND_PREFIX):
-                cmd, args = Globals.commands.parse_args(message)
-                environ = Globals.commands.get_environment(self.factory, channel)
-                environ["NAME"] = name
-                
-                Globals.commands(cmd, args, environ)
-            else:
-                Globals.commands.general(self.factory, user, message)
-            
+        name = user.split("!")[0]
+        
+        handle_message(
+            make_context(
+                protocol=self.factory,
+                source=channel,
+                name=name,
+                body=message,
+                isEmote=action,
+                isGlobal=(channel in self.factory.channels),
+            )
+        )
     
     def action(self, user, channel, message):
         self.privmsg(user, channel, message, True)
     
     def userRenamed(self, old, new):
-        Globals.commands.send_message("[IRC] %s changed name to %s" % (old, new), self.factory)
+        send_global("[IRC] %s changed name to %s" % (old, new))
     
     def userJoined(self, user, channel):
         if channel == self.factory.channel:
-            Globals.commands.send_message("[IRC] %s joined" % (user,), self.factory)
+            send_global("[IRC] %s joined" % (user,))
     
     def userLeft(self, user, channel):
         if channel == self.factory.channel:
-            Globals.commands.send_message("[IRC] %s left" % (user,), self.factory)
+            send_global("[IRC] %s left" % (user,))
     
     def userQuit(self, user, reason):
-        Globals.commands.send_message("[IRC] %s quit (%s)" % (user, reason), self.factory)
+        send_global("[IRC] %s quit (%s)" % (user, reason))
     
     def userKicked(self, user, channel, kicker, reason):
         if channel == self.factory.channel:
-            Globals.commands.send_message("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason), self.factory)
+            send_global("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason))
 
-class IrcFactory(protocol.ClientFactory):
+class IRC(protocol.ClientFactory):
     """IRC connection manager."""
     
-    def __init__(self, nick, host, port, channel):
+    def __init__(self, nick, host, port, channels):
         self.nick = nick
-        self.channel = channel
+        self.channels = channels
         self.client = None
         
         reactor.connectTCP(host, port, self)
+        subscribe(self)
     
     def buildProtocol(self, addr):
         print "[IRC] Connection made"
@@ -88,23 +83,38 @@ class IrcFactory(protocol.ClientFactory):
         
         reactor.callLater(16000, lambda: connector.connect())
     
-    def send_message(self, message):
+    def send_message(self, context):
         if not self.client:
             return
         
-        if message.startswith("/"):
-            args = message.split(" ")
-            cmd = args[0][1:]
-            joined = " ".join(args[1:]).replace("\n", "")
-            
-            if cmd.lower() in "topic":
-                self.client.topic(self.channel, joined)
-            elif cmd.lower() == "me":
-                self.client.action(self.channel, joined)
+        source = context.get("source")
+        channels = []
+        
+        if   source:
+            channels = [source]
+        elif context.get("isGlobal"):
+            channels = self.factory.channels
+        
+        cmd = context.get("body").split(" ")[0][1:].lower()
+        func = self.client.say
+        
+        if context.get("body").startswith("/"):
+            if   cmd == "topic":
+               func = self.client.topic
+            elif cmd == "me":
+                func = self.client.action
             else:
                 print "[IRC] Error: don't know how to %s" % (cmd,)
-        else:
-            self.client.say(self.channel, message)
+        
+        for channel in channels:
+            func(channel, context.get("body"))
     
     def is_authed(self, environ):
         return False #TODO
+    
+    def format_message(self, context):
+        context["name"] = "\x02%s\x02" % (context.get("name"),)
+        
+        return default_format(context)
+        
+        

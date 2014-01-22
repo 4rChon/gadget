@@ -11,10 +11,10 @@ from twisted.conch import manhole, manhole_ssh
 
 from gadgetlib.Globals import Globals
 from gadgetlib.Commands import Commands
-from gadgetlib.Skype import SkypeBot
-from gadgetlib.IRC import IrcFactory
-from gadgetlib.GlobalChat import GlobalChatFactory
-from gadgetlib.Twitch import TwitchFactory
+from gadgetlib.Skype import Skype
+from gadgetlib.IRC import IRC
+from gadgetlib.GlobalChat import GlobalChat
+from gadgetlib.Twitch import Twitch
 from gadgetlib.Messages import send_global
 
 realStdout = sys.stdout
@@ -107,14 +107,17 @@ def main():
     
     Globals.settings = get_settings()
     Globals.commands = Commands()
-    Globals.skype = SkypeBot()
+    Globals.skype = Skype()
     cfg = Globals.settings
     
-    #if cfg.IRC_ADDRESS:
-    #    Globals.irc = IrcFactory(cfg.NICKNAME, *parse_hostname(cfg.IRC_ADDRESS), channel=cfg.IRC_CHANNEL)
-    #
-    #if cfg.GLOBALCHAT_ADDRESS:
-    #    Globals.globalchat = GlobalChatFactory(*parse_hostname(cfg.GLOBALCHAT_ADDRESS))
+    if cfg.IRC_ADDRESS:
+        Globals.irc = IRC(cfg.NICKNAME, *parse_hostname(cfg.IRC_ADDRESS), channels=cfg.IRC_CHANNELS)
+    
+    if cfg.GLOBALCHAT_ADDRESS:
+        Globals.globalchat = GlobalChat(*parse_hostname(cfg.GLOBALCHAT_ADDRESS))
+    
+    if cfg.TWITCH_USERNAME:
+        Globals.twitch = Twitch(cfg.TWITCH_USERNAME, cfg.TWITCH_OATH_TOKEN)
     
     if cfg.ECHOER_BIND_ADDRESS:
         host, port = parse_hostname(cfg.ECHOER_BIND_ADDRESS)

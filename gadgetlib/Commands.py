@@ -55,6 +55,8 @@ class SubprocessProtocol(protocol.ProcessProtocol):
         return environ
 
 class SendMessageProxy(object):
+    """Wrapper for Messages.send_message that uses the appropriate context."""
+    
     def __init__(self, context):
         self.context = context
         
@@ -83,7 +85,7 @@ class Commands(object):
     def handle_incoming(self, context):
         """Scan incoming messages for commands."""
         
-        body = context["body"]
+        body = context.get("body")
         
         if context.get("isEmote"):
             return
@@ -96,14 +98,14 @@ class Commands(object):
             raise StopIteration
     
     def handle_command(self, cmd, args, context):
+        proxy = SendMessageProxy(context)
+        
         try:
             handler = self.handlers[cmd]
         except KeyError:
-            self.send_message("No such command")
+            proxy.send_message("No such command")
             
             return
-        
-        proxy = SendMessageProxy(context)
         
         try:
             deferred = handler(proxy, cmd, args, context)
@@ -122,8 +124,6 @@ class Commands(object):
             return deferred
     
     def init_handlers(self):
-        """Populate the dictionary of command handlers."""
-        
         internalHandlers = self.get_internal_handlers()
         
         for moduleName in internalHandlers:

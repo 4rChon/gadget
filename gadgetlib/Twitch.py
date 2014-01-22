@@ -45,7 +45,7 @@ class TwitchBot(IRCClient):
     def action(self, user, channel, message):
         self.privmsg(user, channel, message, True)
 
-class TwitchFactory(protocol.ClientFactory):
+class Twitch(protocol.ClientFactory):
     """IRC connection manager."""
     
     def __init__(self, nick, token):
