@@ -11,7 +11,7 @@ from twisted.internet.defer import Deferred
 
 from gadgetlib import AuthenticationError, WaitingForAuthenticationNotice
 from gadgetlib.Globals import Globals
-from gadgetlib.Messages import subscribe_incoming
+from gadgetlib.Messages import subscribe_incoming, send_message
 from gadgetlib.handlers import require_auth, simple_callback, make_deferred
 
 def parse_args(body):
@@ -60,10 +60,24 @@ class Commands(object):
     def __init__(self):
         self.handlers = {}
         self.scriptPaths = {}
-        self.receivers = [] #list of protocols that are subscribed to global messages
         
         self.init_handlers()
         subscribe_incoming(self.handle_incoming)
+    
+    def handle_incoming(self, context):
+        """Scan incoming messages for commands."""
+        
+        body = context["body"]
+        
+        if context.get("isEmote"):
+            return
+        
+        if body.startswith(Globals.settings.COMMAND_PREFIX):
+            cmd, args = parse_args(body)
+            
+            self.handle_command(cmd, args, context)
+            
+            raise StopIteration
     
     def handle_command(self, cmd, args, context):
         try:
@@ -88,21 +102,6 @@ class Commands(object):
             deferred.addCallback(callback)
             
             return deferred
-    
-    def handle_incoming(self, context):
-        """Scan incoming messages for commands."""
-        
-        body = context["body"]
-        
-        if context.get("isEmote"):
-            return
-        
-        if body.startswith(Globals.settings.COMMAND_PREFIX):
-            cmd, args = parse_args(body)
-            
-            self.handle_command(cmd, args, context)
-            
-            raise StopIteration
     
     def init_handlers(self):
         """Populate the dictionary of command handlers."""
@@ -148,45 +147,3 @@ class Commands(object):
         environ.update(os.environ)
         
         return SubprocessProtocol(cmdline, environ).deferred
-    
-    def translate_sus(self, name):
-        """Figure out what to say when someone says 'sus'"""
-        
-        for test, result in Globals.settings.SUS_TRANSLATIONS.iteritems():
-            if test in name:
-                return random.choice(result)
-        
-        return None
-    
-    @staticmethod
-    def parse_args(message):
-        """Parse a command message, returning command name and arguments."""
-        
-        args = shlex.split(message)
-        cmd = args[0][1:].lower()
-        args = args[1:]
-        
-        return cmd, args
-    
-    def sighup(self, signum, frame):
-        self.send_message("brb systemd is being a dick")
-        self.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
-    
-    def sigterm(self, signum, frame):
-        self.send_message("oh god help they're trying to kill me")
-        self.handlers.get("quit")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
-    
-    def general(self, _, user, message):
-        """Receives every message."""
-        
-        if   Globals.settings.NICKNAME.lower() == message.lower():
-            self.send_message(random.choice(Globals.settings.NAME_MESSAGES))
-        elif "sus" == message.lower():
-            msg = self.translate_sus(user)
-            
-            if msg:
-                self.send_message(msg)
-            else:
-                self.send_message("sus %s" % (user,))
-        elif all([x in message.lower() for x in [Globals.settings.NICKNAME.lower(), "pls"]]): #GADGET PLS
-            self.send_message(random.choice(Globals.settings.PLS_MESSAGES))

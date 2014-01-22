@@ -4,6 +4,7 @@ import Skype4Py as skype4py
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
+from gadgetlib import filter_unicode
 from gadgetlib.Globals import Globals
 from gadgetlib.Messages import subscribe, handle_message, make_context
 from gadgetlib.handlers import make_deferred
@@ -33,7 +34,7 @@ class SkypeBot(object):
         try:
             self.skype.Attach()
             
-            self.tavern = self.find_chat()
+            self.accountName = self.skype.User().Handle
             self.skype.Settings.AutoAway = False
         except skype4py.errors.SkypeAPIError:
             print "[Skype] Failed to attach"
@@ -53,9 +54,9 @@ class SkypeBot(object):
         
         print "[Skype] Reattached"
     
-    def find_chat(self):
+    def find_chat(self, guid):
         for chat in self.skype.Chats:
-            if chat._Handle == Globals.settings.SKYPE_CONVERSATION_ID:
+            if chat._Handle == guid:
                 return chat
         
         raise Exception("Unable to find skype conversation!")
@@ -70,20 +71,12 @@ class SkypeBot(object):
             handle_message(
                 make_context(
                     protocol=self,
-                    source=None, #TODO
+                    source=msg.ChatName,
+                    name=msg.FromDisplayName,
                     body=msg.Body,
-                    NAME=msg.FromDisplayName,
-                    SKYPE_HANDLE=msg.FromHandle,
-                    isEmote=emote))
-            
-            """if msg.Body.startswith(Globals.settings.COMMAND_PREFIX):
-                handle_message(make_context)
-                environ["NAME"] = msg.FromDisplayName
-                environ["SKYPE_HANDLE"] = msg.FromHandle
-                
-                Globals.commands(cmd, args, environ)
-            else:
-                Globals.commands.general(self, msg.FromDisplayName, msg.Body)"""
+                    skypeHandle=msg.FromHandle,
+                    isEmote=emote,
+                    isGlobal=(self.accountName not in msg.ChatName)))
     
     def attachment_status_handler(self, status):
         global retrySkypeAttach
@@ -92,7 +85,15 @@ class SkypeBot(object):
             retrySkypeAttach = True
     
     def send_message(self, context):
-        reactor.callInThread(self.tavern.SendMessage, context["body"])
+        def send(context):
+            chat = self.find_chat(context["source"])
+            
+            chat.sendMessage(self.format_message(context))
+        
+        reactor.callInThread(send, context)
     
-    def is_authed(self, environ):
-        return any([environ.get("SKYPE_HANDLE", None) in x[0] for x in Globals.settings.ADMINISTRATORS])
+    def is_authed(self, context):
+        return any([context.get("skypeHandle") in x[0] for x in Globals.settings.ADMINISTRATORS])
+    
+    def format_message(self, context):
+        return "[Skype] %s: %s" % (context["name"], context["body"])

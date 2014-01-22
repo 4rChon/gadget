@@ -1,3 +1,4 @@
+from gadgetlib import filter_unicode
 
 _subscribers = []
 _incomingSubscribers = []
@@ -12,7 +13,10 @@ def subscribe_incoming(func):
     
     _incomingSubscribers.append(func)
 
-def send_message(context): #TODO: whitelist support
+def send_message(context):
+    if type(context) is str:
+        context = {"body": context, "name": "Gadget", "protocol": None}
+    
     for protocol in _subscribers:
         if protocol != context["protocol"]:
             protocol.send_message(context)
@@ -24,20 +28,21 @@ def handle_message(context):
     except StopIteration:
         pass
 
-def make_context(protocol, source, body, **kwargs):
+def make_context(protocol, source, name, body, **kwargs):
     result = {}
     
     result.update({"protocol": protocol,
                    "source": source,
-                   "body": body})
-    result.update({"global": True,
+                   "name": filter_unicode(name),
+                   "body": filter_unicode(body)})
+    result.update({"isGlobal": True,
                    "isEmote": False})
     result.update(kwargs)
     
     return result
 
 def _send_global(context):
-    if context.get("global"):
+    if context.get("isGlobal"):
         send_message(context)
 
 subscribe_incoming(_send_global)

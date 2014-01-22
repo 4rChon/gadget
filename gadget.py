@@ -15,6 +15,7 @@ from gadgetlib.Skype import SkypeBot
 from gadgetlib.IRC import IrcFactory
 from gadgetlib.GlobalChat import GlobalChatFactory
 from gadgetlib.Twitch import TwitchFactory
+from gadgetlib.Messages import send_message
 
 realStdout = sys.stdout
 realStderr = sys.stderr
@@ -92,6 +93,14 @@ def parse_hostname(string):
         
         raise SystemExit
 
+def sighup(signum, frame):
+    send_message("brb systemd is being a dick")
+    Globals.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
+
+def sigterm(signum, frame):
+    send_message("oh god help they're trying to kill me")
+    Globals.handlers.get("quit")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
+
 def main():
     if not os.path.exists("data/"):
         os.mkdir("data/")
@@ -117,11 +126,8 @@ def main():
         
         reactor.listenTCP(port, manhole_factory(globals()), interface=host)
     
-    if cfg.TWITCH_USERNAME:
-        Globals.twitch = TwitchFactory(cfg.TWITCH_USERNAME, cfg.TWITCH_OATH_TOKEN)
-    
-    signal.signal(signal.SIGTERM, Globals.commands.sigterm)
-    signal.signal(signal.SIGHUP, Globals.commands.sighup)
+    signal.signal(signal.SIGTERM, sigterm)
+    signal.signal(signal.SIGHUP, sighup)
     LoopingCall(reactor_step).start(1)
     reactor.run()
     
@@ -134,7 +140,7 @@ class Echoer(protocol.DatagramProtocol):
     """Listens for datagrams, and sends them as messages."""
     
     def datagramReceived(self, data, (host, port)):
-        Globals.commands.send_message(data)
+        send_message(data)
 
 if __name__ == '__main__':
     main()

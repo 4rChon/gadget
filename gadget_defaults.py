@@ -73,3 +73,9 @@ SUS_MARKERS = ["sus", "hi"] #when somebody sends a message consisting only of th
 SUS_TRANSLATIONS = { #greet them in a special way
     "goppend": ["gopsus", "hi goppend", "heil goppend"],
 }
+
+##misc
+
+UNICODE_BLACKLIST = [
+    '\u202e', #right-to-left control character (thanks, goppend)
+]
