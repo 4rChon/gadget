@@ -4,6 +4,8 @@ class Globals(object):
     retrySkypeAttach = False
     handlers = None
     settings = None
+    
+    #protocols
     skype = None
     irc = None
     globalchat = None

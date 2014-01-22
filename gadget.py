@@ -93,13 +93,23 @@ def parse_hostname(string):
         
         raise SystemExit
 
-def sighup(signum, frame):
+def sighup(signum, frame): #reload
     send_global("brb systemd is being a dick")
-    Globals.handlers.get("reload")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
+    
+    def callback():
+        Globals.running = False
+        Globals.restart = True
+    
+    reactor.callLater(1, callback)
 
-def sigterm(signum, frame):
+def sigquit(signum, frame): #quit
     send_global("oh god help they're trying to kill me")
-    Globals.handlers.get("quit")(None, None, {"SKYPE_HANDLE": Globals.settings.ADMINISTRATORS[0][0]})
+    
+    def callback():
+        Globals.running = False
+        Globals.restart = False
+    
+    reactor.callLater(1, callback)
 
 def main():
     if not os.path.exists("data/"):
@@ -129,7 +139,7 @@ def main():
         
         reactor.listenTCP(port, manhole_factory(globals()), interface=host)
     
-    signal.signal(signal.SIGTERM, sigterm)
+    signal.signal(signal.SIGQUIT, sigquit)
     signal.signal(signal.SIGHUP, sighup)
     LoopingCall(reactor_step).start(1)
     reactor.run()
