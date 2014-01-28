@@ -5,8 +5,12 @@ from gadget.messages import subscribe_incoming, send_message
 
 def translate_sus(name):
     for k,v in Globals.settings.SUS_TRANSLATIONS.iteritems():
-        if k in name:
-            return random.choice(v)
+        if type(k) is str:
+            if k in name:
+                return random.choice(v)
+        elif type(k) is list:
+            if any([test in name for test in k]):
+                return random.choice(v)
     
     return "sus %s" % (name,)
 
