@@ -3,7 +3,7 @@ import os
 from twisted.internet import reactor, protocol
 from twisted.words.protocols.irc import IRCClient
 
-from gadgetlib.Globals import Globals
+from gadget.Globals import Globals
 
 class TwitchBot(IRCClient):
     """IRC protocol manager."""

@@ -1,4 +1,4 @@
-from gadgetlib.handlers import make_deferred
+from gadget.plugins import make_deferred
 
 def handle_help(self, cmd, args, environ):
     """!help [command name]\nShows you help n' stuff."""

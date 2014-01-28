@@ -9,13 +9,13 @@ from twisted.internet.task import LoopingCall
 from twisted.cred import portal as Portal, checkers
 from twisted.conch import manhole, manhole_ssh
 
-from gadgetlib.Globals import Globals
-from gadgetlib.Commands import Commands
-from gadgetlib.Skype import Skype
-from gadgetlib.IRC import IRC
-from gadgetlib.GlobalChat import GlobalChat
-from gadgetlib.Twitch import Twitch
-from gadgetlib.Messages import send_global
+from gadget.Globals import Globals
+from gadget.Commands import Commands
+from gadget.Skype import Skype
+from gadget.IRC import IRC
+from gadget.GlobalChat import GlobalChat
+from gadget.Twitch import Twitch
+from gadget.Messages import send_global
 
 realStdout = sys.stdout
 realStderr = sys.stderr

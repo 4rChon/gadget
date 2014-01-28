@@ -1,9 +1,8 @@
 import os
-import shlex
 
-from gadgetlib.Commands import SubprocessProtocol
-from gadgetlib.Globals import Globals
-from gadgetlib.handlers import require_auth, make_deferred, simple_callback
+from gadget.Commands import SubprocessProtocol
+from gadget.Globals import Globals
+from gadget.plugins import require_auth, make_deferred, simple_callback
 
 @require_auth
 def handle_reload(self, cmd, args, environ):

@@ -9,10 +9,10 @@ from cStringIO import StringIO
 from twisted.internet import reactor, protocol
 from twisted.internet.defer import Deferred
 
-from gadgetlib import AuthenticationError, WaitingForAuthenticationNotice
-from gadgetlib.Globals import Globals
-from gadgetlib.Messages import subscribe_incoming, send_message
-from gadgetlib.handlers import require_auth, simple_callback, make_deferred
+from gadget import AuthenticationError, WaitingForAuthenticationNotice
+from gadget.Globals import Globals
+from gadget.Messages import subscribe_incoming, send_message
+from gadget.plugins import require_auth, simple_callback, make_deferred
 
 def parse_args(body):
     """Parse a command message, returning command name and arguments."""
@@ -123,21 +123,24 @@ class Commands(object):
             
             return deferred
     
+    def register_command(self, func, name=None):
+        if not name:
+            try:
+                name = func.__name__.split("handle_")[1]
+            except IndexError:
+                raise NameError("No name given and name cannot be deduced from function name.")
+        
+        self.handlers.update({name: func})
+    
     def init_handlers(self):
         internalHandlers = self.get_internal_handlers()
         
         for moduleName in internalHandlers:
-            module = importlib.import_module("gadgetlib.handlers.%s" % moduleName)
-            
-            for name in dir(module):
-                if name.startswith("handle_"):
-                    func = getattr(module, name)
-                    
-                    self.handlers.update({name.split("handle_")[1]: func})
+            importlib.import_module("gadget.plugins.%s" % moduleName)
         
-        regex = re.compile(r"handlers/([\w\-]+)\.([\w\-]+)$")
+        regex = re.compile(r"commands/([\w\-]+)\.([\w\-]+)$")
         
-        for file in glob.iglob("handlers/*"):
+        for file in glob.iglob("commands/*"):
             parsed = regex.match(file)
             
             if parsed:
@@ -146,15 +149,15 @@ class Commands(object):
                 self.handlers.update({groups[0]: self.run_handler})
                 self.scriptPaths.update({groups[0]: "%s.%s" % (groups[0], groups[1])})
     
-    def get_internal_handlers(self):
-        internalHandlers = glob.glob("gadgetlib/handlers/*.py")
+    def get_plugins(self):
+        plugins = glob.glob("gadget/plugins/*.py")
         
-        for index, file in enumerate(internalHandlers):
-            internalHandlers[index] = os.path.split(file)[1][:-3]
+        for index, file in enumerate(plugins):
+            plugins[index] = os.path.split(file)[1][:-3]
         
-        internalHandlers.remove("__init__")
+        plugins.remove("__init__")
         
-        return internalHandlers
+        return plugins
     
     @staticmethod
     def run_handler(self, cmd, args, context):

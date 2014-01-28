@@ -4,9 +4,9 @@ import Skype4Py as skype4py
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
-from gadgetlib.Globals import Globals
-from gadgetlib.Messages import subscribe, handle_message, make_context
-from gadgetlib.handlers import make_deferred
+from gadget.Globals import Globals
+from gadget.Messages import subscribe, handle_message, make_context
+from gadget.plugins import make_deferred
 
 class Skype(object):
     """Skype API handler."""

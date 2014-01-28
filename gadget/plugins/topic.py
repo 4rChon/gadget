@@ -1,4 +1,4 @@
-from gadgetlib.handlers import require_auth
+from gadget.plugins import require_auth
 
 @require_auth
 def handle_topic(self, cmd, args, environ):
