@@ -33,9 +33,14 @@ def send_message(context, exclude=None):
                 
                 tmpContext = format(context)
             
+            tmpContext["body"] = filter_unicode(tmpContext["body"])
+            
             protocol.send_message(tmpContext)
     else:
-        context.get("protocol").send_message(context)
+        tmpContext = context.copy()
+        tmpContext["body"] = filter_unicode(tmpContext["body"])
+        
+        tmpContext.get("protocol").send_message(tmpContext)
 
 def send_global(body):
     """Sends a message to all subscribed protocols."""
@@ -76,9 +81,9 @@ def make_context(protocol, source, name, body, **kwargs):
 def default_format(context):
     """Performs default formatting of messages."""
     
-    res = filter_unicode("[%s] %s: %s" % (context["protocol"].__class__.__name__,
-                                          context["name"],
-                                          context["body"]))
+    res = "[%s] %s: %s" % (context["protocol"].__class__.__name__,
+                           context["name"],
+                           context["body"])
     
     context.update({"body": res, "isFormatted": True})
     
