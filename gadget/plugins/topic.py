@@ -7,4 +7,5 @@ def handle_topic(self, cmd, args, context):
     
     self.send_message("/topic The %s Tavern" % (" ".join(args),))
 
-register_command(handle_topic)
+def initialize():
+    register_command(handle_topic)

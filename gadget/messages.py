@@ -62,14 +62,14 @@ def make_context(protocol, source, name, body, **kwargs):
     
     result = {}
     
-    result.update({"protocol": protocol,
+    result.update({"protocol": protocol, #required entries
                    "source": source,
                    "name": name,
                    "body": body})
-    result.update({"isGlobal": True,
+    result.update({"isGlobal": True, #default values for optional entries
                    "isEmote": False,
                    "isFormatted": False})
-    result.update(kwargs)
+    result.update(kwargs) #everything else
     
     return result
 
@@ -84,8 +84,9 @@ def default_format(context):
     
     return context
 
-#local functions
 def filter_unicode(str):
+    """Removes blacklisted unicode characters, and encodes as UTF-8."""
+    
     for char in Globals.settings.UNICODE_BLACKLIST:
         str.replace(char, "")
     
@@ -94,8 +95,8 @@ def filter_unicode(str):
     
     return str
 
-def send_all_msgs(context):
+def _send_all_msgs(context):
     if context.get("isGlobal"):
         send_message(context, exclude=context.get("protocol"))
 
-subscribe_incoming(send_all_msgs)
+subscribe_incoming(_send_all_msgs)

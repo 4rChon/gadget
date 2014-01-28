@@ -86,8 +86,8 @@ class Commands(object):
     """Factory for management of command handlers and related tasks."""
     
     def __init__(self):
-        self.handlers = {}
-        self.scriptPaths = {}
+        self.handlers = None
+        self.scriptPaths = None
         
         subscribe_incoming(self.handle_incoming)
     
@@ -133,14 +133,24 @@ class Commands(object):
             return deferred
     
     def init_commands(self):
+        self.handlers = {}
+        self.scriptPaths = {}
+        
+        #load plugins
         for moduleName in self.get_plugin_modules():
             try:
-                importlib.import_module("gadget.plugins.%s" % moduleName)
+                plugin = importlib.import_module("gadget.plugins.%s" % moduleName)
+                
+                if hasattr(plugin, "initialize"):
+                    plugin.initialize()
+                else:
+                    print "Warning: plugin %s does not have an initialize function" % (moduleName,)
             except Exception as e:
                 print "Exception raised when loading plugin %s:" % (moduleName,)
                 
                 traceback.print_exc()
         
+        #load command scripts
         if not os.path.exists("commands"):
             return
         

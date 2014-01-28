@@ -11,4 +11,5 @@ def handle_patience(self, cmd, args, context):
     for x in range(0, 5):
         reactor.callLater(5*x, callback)
 
-register_command(handle_patience)
+def initialize():
+    register_command(handle_patience)

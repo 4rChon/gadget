@@ -6,4 +6,5 @@ def handle_gc(self, cmd, args, context):
     
     Globals.sven.send_message("%s: %s" % (context.get("name"), " ".join(args)))
 
-register_command(handle_gc)
+def initialize():
+    register_command(handle_gc)

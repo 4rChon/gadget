@@ -1,4 +1,3 @@
-from gadget.globals import Globals
 
 class AuthenticationError(Exception):
     """Rasied by require_auth when the user is not authenticated."""

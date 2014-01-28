@@ -3,10 +3,19 @@ import os
 from gadget.commands import SubprocessProtocol, register_command
 from gadget.globals import Globals
 from gadget.plugins import require_auth, make_deferred, simple_callback
+from gadget.messages import _incomingSubscribers
 
 @require_auth
 def handle_reload(self, cmd, args, context):
     """!reload\nReload the list of commands."""
+    
+    essentialSubscribers = _incomingSubscribers[0:2] #_send_all_msgs and Commands.handle_incoming
+    
+    for _ in range(len(_incomingSubscribers)):
+        _incomingSubscribers.pop(0)
+    
+    for x in essentialSubscribers:
+        _incomingSubscribers.append(x)
     
     self.init_commands()
 
@@ -47,8 +56,9 @@ def handle_git(self, cmd, args, context):
     
     return SubprocessProtocol(["/usr/bin/git"] + args, os.environ.copy()).deferred
 
-register_command(handle_reload)
-register_command(handle_restart)
-register_command(handle_quit)
-register_command(handle_pull)
-register_command(handle_git)
+def initialize():
+    register_command(handle_reload)
+    register_command(handle_restart)
+    register_command(handle_quit)
+    register_command(handle_pull)
+    register_command(handle_git)

@@ -22,4 +22,5 @@ def handle_help(self, cmd, args, context):
     else:
         return make_deferred("I know about the following commands: " + ", ".join(self.handlers.keys()))
 
-register_command(handle_help)
+def initialize():
+    register_command(handle_help)
