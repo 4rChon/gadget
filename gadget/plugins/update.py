@@ -1,7 +1,7 @@
 import os
 
-from gadget.Commands import SubprocessProtocol, register_command
-from gadget.Globals import Globals
+from gadget.commands import SubprocessProtocol, register_command
+from gadget.globals import Globals
 from gadget.plugins import require_auth, make_deferred, simple_callback
 
 @require_auth

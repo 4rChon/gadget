@@ -3,8 +3,8 @@ import os
 from twisted.internet import reactor, protocol
 from twisted.words.protocols.irc import IRCClient
 
-from gadget.Globals import Globals
-from gadget.Messages import subscribe, default_format, send_global, handle_message, make_context
+from gadget.globals import Globals
+from gadget.messages import subscribe, default_format, send_global, handle_message, make_context
 
 class IrcBot(IRCClient):
     """IRC protocol manager."""

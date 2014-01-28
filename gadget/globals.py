@@ -2,7 +2,7 @@ class Globals(object):
     running = True
     restart = False
     retrySkypeAttach = False
-    handlers = None
+    commands = None
     settings = None
     
     #protocols

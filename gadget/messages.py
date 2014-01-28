@@ -1,4 +1,4 @@
-from gadget.Globals import Globals
+from gadget.globals import Globals
 
 _subscribers = []
 _incomingSubscribers = []

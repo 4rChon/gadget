@@ -1,6 +1,6 @@
 from twisted.internet import reactor
 
-from gadget.Commands import register_command
+from gadget.commands import register_command
 
 def handle_patience(self, cmd, args, context):
     """!patience\nBoost.Build kindly requests that you cool your tits."""

@@ -1,5 +1,5 @@
 from gadget.plugins import require_auth
-from gadget.Commands import register_command
+from gadget.commands import register_command
 
 @require_auth
 def handle_topic(self, cmd, args, context):

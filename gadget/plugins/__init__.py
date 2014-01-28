@@ -4,7 +4,7 @@ from functools import wraps
 from twisted.internet.defer import Deferred
 
 from gadget import AuthenticationError, WaitingForAuthenticationNotice
-from gadget.Globals import Globals
+from gadget.globals import Globals
 
 def get_auth_failure_msg():
     return random.choice(Globals.settings.AUTH_FAILURE_MESSAGES)

@@ -4,14 +4,15 @@ import importlib
 import shlex
 import re
 import pkgutil
+import traceback
 from cStringIO import StringIO
 
 from twisted.internet import reactor, protocol
 from twisted.internet.defer import Deferred
 
 from gadget import AuthenticationError, WaitingForAuthenticationNotice
-from gadget.Globals import Globals
-from gadget.Messages import subscribe_incoming, send_message
+from gadget.globals import Globals
+from gadget.messages import subscribe_incoming, send_message
 from gadget.plugins import simple_callback, make_deferred
 
 def parse_args(body):
@@ -88,7 +89,6 @@ class Commands(object):
         self.handlers = {}
         self.scriptPaths = {}
         
-        self.init_commands()
         subscribe_incoming(self.handle_incoming)
     
     def handle_incoming(self, context):
@@ -138,7 +138,8 @@ class Commands(object):
                 importlib.import_module("gadget.plugins.%s" % moduleName)
             except Exception as e:
                 print "Exception raised when loading plugin %s:" % (moduleName,)
-                print "    %s: %s" % (e.__class__.__name__, " ".join(e.args))
+                
+                traceback.print_exc()
         
         if not os.path.exists("commands"):
             return
@@ -168,7 +169,7 @@ class Commands(object):
     def run_handler(self, cmd, args, context):
         """Runs a handler script."""
         
-        cmdline = ["./handlers/%s" % (self.scriptPaths[cmd],)] + args
+        cmdline = ["./commands/%s" % (self.scriptPaths[cmd],)] + args
         context = context.copy()
         
         context.update(os.environ)

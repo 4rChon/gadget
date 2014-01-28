@@ -9,13 +9,13 @@ from twisted.internet.task import LoopingCall
 from twisted.cred import portal as Portal, checkers
 from twisted.conch import manhole, manhole_ssh
 
-from gadget.Globals import Globals
-from gadget.Commands import Commands
+from gadget.globals import Globals
+from gadget.commands import Commands
+from gadget.messages import send_global
 from gadget.Skype import Skype
 from gadget.IRC import IRC
 from gadget.GlobalChat import GlobalChat
 from gadget.Twitch import Twitch
-from gadget.Messages import send_global
 
 realStdout = sys.stdout
 realStderr = sys.stderr
@@ -109,6 +109,8 @@ def main():
     Globals.commands = Commands()
     Globals.skype = Skype()
     cfg = Globals.settings
+    
+    Globals.commands.init_commands()
     
     if cfg.IRC_ADDRESS:
         Globals.irc = IRC(cfg.NICKNAME, *parse_hostname(cfg.IRC_ADDRESS), channels=cfg.IRC_CHANNELS)

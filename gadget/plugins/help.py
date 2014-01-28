@@ -1,5 +1,5 @@
 from gadget.plugins import make_deferred
-from gadget.Commands import register_command
+from gadget.commands import register_command
 
 def handle_help(self, cmd, args, context):
     """!help [command name]\nShows you help n' stuff."""
