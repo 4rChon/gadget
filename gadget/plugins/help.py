@@ -1,6 +1,7 @@
 from gadget.plugins import make_deferred
+from gadget.Commands import register_command
 
-def handle_help(self, cmd, args, environ):
+def handle_help(self, cmd, args, context):
     """!help [command name]\nShows you help n' stuff."""
     
     if len(args) > 0:
@@ -20,3 +21,5 @@ def handle_help(self, cmd, args, environ):
                 return make_deferred("I don't know what {0} does.".format(name))
     else:
         return make_deferred("I know about the following commands: " + ", ".join(self.handlers.keys()))
+
+register_command(handle_help)

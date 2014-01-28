@@ -1,9 +1,9 @@
 import glob
 import os
-import random
 import importlib
 import shlex
 import re
+import pkgutil
 from cStringIO import StringIO
 
 from twisted.internet import reactor, protocol
@@ -12,7 +12,7 @@ from twisted.internet.defer import Deferred
 from gadget import AuthenticationError, WaitingForAuthenticationNotice
 from gadget.Globals import Globals
 from gadget.Messages import subscribe_incoming, send_message
-from gadget.plugins import require_auth, simple_callback, make_deferred
+from gadget.plugins import simple_callback, make_deferred
 
 def parse_args(body):
     """Parse a command message, returning command name and arguments."""
@@ -22,6 +22,15 @@ def parse_args(body):
     args = args[1:]
     
     return cmd, args
+
+def register_command(func, name=None):
+    if not name:
+        try:
+            name = func.__name__.split("handle_")[1]
+        except (AttributeError, IndexError):
+            raise NameError("No name given and name cannot be deduced from function name.")
+    
+    Globals.commands.handlers.update({name: func})
 
 class SubprocessProtocol(protocol.ProcessProtocol):
     """Twisted-friendly subprocess."""
@@ -79,7 +88,7 @@ class Commands(object):
         self.handlers = {}
         self.scriptPaths = {}
         
-        self.init_handlers()
+        self.init_commands()
         subscribe_incoming(self.handle_incoming)
     
     def handle_incoming(self, context):
@@ -123,20 +132,16 @@ class Commands(object):
             
             return deferred
     
-    def register_command(self, func, name=None):
-        if not name:
+    def init_commands(self):
+        for moduleName in self.get_plugin_modules():
             try:
-                name = func.__name__.split("handle_")[1]
-            except IndexError:
-                raise NameError("No name given and name cannot be deduced from function name.")
+                importlib.import_module("gadget.plugins.%s" % moduleName)
+            except Exception as e:
+                print "Exception raised when loading plugin %s:" % (moduleName,)
+                print "    %s: %s" % (e.__class__.__name__, " ".join(e.args))
         
-        self.handlers.update({name: func})
-    
-    def init_handlers(self):
-        internalHandlers = self.get_internal_handlers()
-        
-        for moduleName in internalHandlers:
-            importlib.import_module("gadget.plugins.%s" % moduleName)
+        if not os.path.exists("commands"):
+            return
         
         regex = re.compile(r"commands/([\w\-]+)\.([\w\-]+)$")
         
@@ -149,15 +154,15 @@ class Commands(object):
                 self.handlers.update({groups[0]: self.run_handler})
                 self.scriptPaths.update({groups[0]: "%s.%s" % (groups[0], groups[1])})
     
-    def get_plugins(self):
-        plugins = glob.glob("gadget/plugins/*.py")
+    def get_plugin_modules(self):
+        import gadget.plugins as package
         
-        for index, file in enumerate(plugins):
-            plugins[index] = os.path.split(file)[1][:-3]
+        path = os.path.dirname(package.__file__)
+        plugins = []
         
-        plugins.remove("__init__")
-        
-        return plugins
+        for _, name, isPkg in pkgutil.iter_modules([path]):
+            if not isPkg:
+                yield name
     
     @staticmethod
     def run_handler(self, cmd, args, context):
