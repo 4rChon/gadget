@@ -42,18 +42,18 @@ class IrcBot(IRCClient):
         send_global("[IRC] %s changed name to %s" % (old, new))
     
     def userJoined(self, user, channel):
-        if channel == self.factory.channel:
+        if channel in self.factory.channels:
             send_global("[IRC] %s joined" % (user,))
     
     def userLeft(self, user, channel):
-        if channel == self.factory.channel:
+        if channel in self.factory.channels:
             send_global("[IRC] %s left" % (user,))
     
     def userQuit(self, user, reason):
         send_global("[IRC] %s quit (%s)" % (user, reason))
     
     def userKicked(self, user, channel, kicker, reason):
-        if channel == self.factory.channel:
+        if channel in self.factory.channels:
             send_global("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason))
 
 class IRC(protocol.ClientFactory):
@@ -110,7 +110,7 @@ class IRC(protocol.ClientFactory):
         for channel in channels:
             func(channel, context.get("body"))
     
-    def is_authed(self, environ):
+    def is_authed(self, context):
         return False #TODO
     
     def format_message(self, context):
