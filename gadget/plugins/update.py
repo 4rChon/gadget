@@ -44,7 +44,7 @@ def handle_pull(self, cmd, args, context):
     
     @simple_callback
     def callback(data):
-        self.handlers["restart"](None, None, context)
+        self.handlers["restart"](None, None, None, context)
     
     deferred.addCallback(callback)
     
