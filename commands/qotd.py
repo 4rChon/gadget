@@ -19,10 +19,9 @@ else:
         print fetch("latest")
     elif cmd == "search":
         query = urllib.urlencode({"q": " ".join(sys.argv[2:])})
+        print fetch("search&" + query)
     elif cmd == "help":
         print "Available commands: random, latest, search, help"
-        
-        print fetch("search&" + query)
     else:
         try:
             id = int(cmd)
