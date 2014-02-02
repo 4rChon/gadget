@@ -39,22 +39,22 @@ class IrcBot(IRCClient):
         self.privmsg(user, channel, message, True)
     
     def userRenamed(self, old, new):
-        send_global("[IRC] %s changed name to %s" % (old, new))
+        send_global("[IRC] %s changed name to %s" % (old, new), self.factory)
     
     def userJoined(self, user, channel):
         if channel in self.factory.channels:
-            send_global("[IRC] %s joined" % (user,))
+            send_global("[IRC] %s joined" % (user,), self.factory)
     
     def userLeft(self, user, channel):
         if channel in self.factory.channels:
-            send_global("[IRC] %s left" % (user,))
+            send_global("[IRC] %s left" % (user,), self.factory)
     
     def userQuit(self, user, reason):
-        send_global("[IRC] %s quit (%s)" % (user, reason))
+        send_global("[IRC] %s quit (%s)" % (user, reason), self.factory)
     
     def userKicked(self, user, channel, kicker, reason):
         if channel in self.factory.channels:
-            send_global("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason))
+            send_global("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason), self.factory)
 
 class IRC(protocol.ClientFactory):
     """IRC connection manager."""

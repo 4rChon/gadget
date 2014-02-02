@@ -42,7 +42,7 @@ def send_message(context, exclude=None):
         
         tmpContext.get("protocol").send_message(tmpContext)
 
-def send_global(body):
+def send_global(body, exclude=None):
     """Sends a message to all subscribed protocols."""
     
     context = {}
@@ -51,7 +51,7 @@ def send_global(body):
                     "protocol": None,
                     "isGlobal": True,
                     "isFormatted": True})
-    send_message(context)
+    send_message(context, exclude)
 
 def handle_message(context):
     """Called by protocols when a message is received."""
