@@ -96,7 +96,9 @@ class IRC(protocol.ClientFactory):
         elif context.get("isGlobal"):
             channels = self.channels
         
-        cmd = context.get("body").split(" ")[0][1:].lower()
+        split = context.get("body").split(" ")
+        cmd = split[0][1:].lower()
+        body = " ".join(split[1:])
         func = self.client.msg
         
         if context.get("body").startswith("/"):
@@ -106,9 +108,11 @@ class IRC(protocol.ClientFactory):
                 func = self.client.action
             else:
                 print "[IRC] Error: don't know how to %s" % (cmd,)
+                
+                return
         
         for channel in channels:
-            func(channel, context.get("body"))
+            func(channel, body)
     
     def is_authed(self, context):
         return False #TODO
