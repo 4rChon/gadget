@@ -12,10 +12,8 @@ from twisted.conch import manhole, manhole_ssh
 from gadget.globals import Globals
 from gadget.commands import Commands
 from gadget.messages import send_global
-from gadget.Skype import Skype
-from gadget.IRC import IRC
-from gadget.GlobalChat import GlobalChat
-from gadget.Twitch import Twitch
+from gadget.plugins import load_plugins
+from gadget.protocols import load_protocols
 
 realStdout = sys.stdout
 realStderr = sys.stderr
@@ -107,29 +105,10 @@ def main():
     
     Globals.settings = get_settings()
     Globals.commands = Commands()
-    Globals.skype = Skype()
-    cfg = Globals.settings
     
     Globals.commands.init_commands()
-    
-    if cfg.IRC_ADDRESS:
-        Globals.irc = IRC(cfg.NICKNAME, *parse_hostname(cfg.IRC_ADDRESS), channels=cfg.IRC_CHANNELS)
-    
-    if cfg.GLOBALCHAT_ADDRESS:
-        Globals.globalchat = GlobalChat(*parse_hostname(cfg.GLOBALCHAT_ADDRESS))
-    
-    if cfg.TWITCH_USERNAME:
-        Globals.twitch = Twitch(cfg.TWITCH_USERNAME, cfg.TWITCH_OATH_TOKEN)
-    
-    if cfg.ECHOER_BIND_ADDRESS:
-        host, port = parse_hostname(cfg.ECHOER_BIND_ADDRESS)
-        
-        reactor.listenUDP(port, Echoer(), interface=host)
-    
-    if cfg.MANHOLE_BIND_ADDRESS:
-        host, port = parse_hostname(cfg.MANHOLE_BIND_ADDRESS)
-        
-        reactor.listenTCP(port, manhole_factory(globals()), interface=host)
+    load_plugins()
+    load_protocols()
     
     signal.signal(signal.SIGQUIT, sigquit)
     signal.signal(signal.SIGHUP, sighup)

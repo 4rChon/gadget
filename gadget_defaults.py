@@ -5,6 +5,10 @@ ADMINISTRATORS = [ #people with access to commands such as !reload
     ("skype name", "irc mask", "steamid"),
 ]
 
+COMMAND_PATHS = ["commands"] #paths to folders with command scripts
+PLUGIN_PATHS = ["plugins"] #paths to folders with additional plugin modules
+PROTOCOL_PATHS = ["protocols"] #paths to folders with additional protocol modules
+
 ##connection information
 ##a blank address disables the server
 

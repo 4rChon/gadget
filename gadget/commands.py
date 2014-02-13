@@ -83,7 +83,7 @@ class SendMessageProxy(object):
         send_message(context)
 
 class Commands(object):
-    """Factory for management of command handlers and related tasks."""
+    """Factory for management of command handlers."""
     
     def __init__(self):
         self.handlers = None
@@ -107,6 +107,8 @@ class Commands(object):
             raise StopIteration
     
     def handle_command(self, cmd, args, context):
+        """Execute a command."""
+        
         proxy = SendMessageProxy(context)
         
         try:
@@ -133,47 +135,27 @@ class Commands(object):
             return deferred
     
     def init_commands(self):
+        """Load command scripts."""
+        
         self.handlers = {}
         self.scriptPaths = {}
-        
-        #load plugins
-        for moduleName in self.get_plugin_modules():
-            try:
-                plugin = importlib.import_module("gadget.plugins.%s" % moduleName)
-                
-                if hasattr(plugin, "initialize"):
-                    plugin.initialize()
-                else:
-                    print "Warning: plugin %s does not have an initialize function" % (moduleName,)
-            except Exception as e:
-                print "Exception raised when loading plugin %s:" % (moduleName,)
-                
-                traceback.print_exc()
-        
-        #load command scripts
-        if not os.path.exists("commands"):
-            return
-        
         regex = re.compile(r"commands/([\w\-]+)\.([\w\-]+)$")
         
-        for file in glob.iglob("commands/*"):
-            parsed = regex.match(file)
+        for folder in Globals.settings.COMMAND_PATHS:
+            if not os.path.exists(folder):
+                return
             
-            if parsed:
-                groups = parsed.groups()
+            for file in glob.iglob("%s/*" % (folder,)):
+                parsed = regex.match(file)
                 
-                self.handlers.update({groups[0]: self.run_handler})
-                self.scriptPaths.update({groups[0]: "%s.%s" % (groups[0], groups[1])})
-    
-    def get_plugin_modules(self):
-        import gadget.plugins as package
-        
-        path = os.path.dirname(package.__file__)
-        plugins = []
-        
-        for _, name, isPkg in pkgutil.iter_modules([path]):
-            if not isPkg:
-                yield name
+                if parsed:
+                    groups = parsed.groups()
+                    
+                    if groups[0] in self.handlers:
+                        print "WARNING: command %s loaded more than once" % (groups[0],)
+                    
+                    self.handlers.update({groups[0]: self.run_handler})
+                    self.scriptPaths.update({groups[0]: "%s.%s" % (groups[0], groups[1])})
     
     @staticmethod
     def run_handler(self, cmd, args, context):
