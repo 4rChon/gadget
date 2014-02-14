@@ -1,21 +1,83 @@
-import os
 import importlib
 import traceback
+import random
+from itertools import chain
+from functools import wraps
 
-from gadget import find_modules_in_package
+from twisted.internet.defer import Deferred
 
-_plugins = []
+from gadget import get_modules_in_package, get_modules_in_directory, AuthenticationError, WaitingForAuthenticationNotice
+from gadget.globals import Globals
 
 def load_plugins():
-    for moduleName in find_modules_in_package("gadget.plugins"):
-        try:
-            plugin = importlib.import_module("gadget.plugins.%s" % moduleName)
-            
-            if hasattr(plugin, "initialize"):
-                plugin.initialize()
+    """Load all plugins."""
+    
+    modules = chain()
+    
+    for iterable in ([get_modules_in_package("gadget.default_plugins")] +
+                     [get_modules_in_directory(dir) for dir in Globals.settings.PLUGIN_PATHS]):
+        modules = chain(modules, iterable)
+    
+    for module in modules:
+        if hasattr(module, "initialize"):
+            module.initialize()
+            Globals.plugins.update({module.__name__: module})
+        else:
+            print "Warning: plugin %s does not have an initialize function" % (module.__name__,)
+
+def get_auth_failure_msg():
+    return random.choice(Globals.settings.AUTH_FAILURE_MESSAGES)
+
+def is_authed(context):
+    """Check whether a user is authenticated to run priviledged commands."""
+    
+    try:
+        return context["protocol"].is_authed(context)
+    except KeyError:
+        print "Warning: is_authed called without protocol in context dictionary"
+        
+        return False
+
+def require_auth(func):
+    """Decorator for checking authentication before running a command."""
+    
+    @wraps(func)
+    def wrapper(self, cmd, args, context):
+        authed = is_authed(context)
+        
+        def complete(result):
+            if not result:
+                return make_deferred(get_auth_failure_msg())
             else:
-                print "Warning: plugin %s does not have an initialize function" % (moduleName,)
-        except Exception as e:
-            print "Exception raised when loading plugin %s:" % (moduleName,)
+                return func(self, cmd, args, context)
+        
+        if   type(authed) is bool:
+            return complete(authed)
+        elif authed.__class__ is Deferred: #type(Deferred()) returns <type 'instance'> (Deferred is an old-style class)
+            authed.addCallback(complete) #default callback chaining behaviour returns the usual result from the command handler after verifying authentication
             
-            traceback.print_exc()
+            raise WaitingForAuthenticationNotice(authed)
+        else:
+            raise NotImplementedError("require_auth does not know how to handle is_authed return type of %s" % (str(type(authed)),))
+    
+    return wrapper
+
+def simple_callback(func):
+    """Shortcut for Twisted's Deferred expecting callbacks to return the deferred data."""
+    
+    @wraps(func)
+    def wrapper(data):
+        func(data)
+        
+        return data
+    
+    return wrapper
+
+def make_deferred(data):
+    """Wraps data into a deferred."""
+    
+    deferred = Deferred()
+    
+    deferred.callback(data)
+    
+    return deferred

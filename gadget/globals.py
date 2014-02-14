@@ -5,10 +5,7 @@ class Globals(object):
     commands = None
     settings = None
     
-    #protocols
-    skype = None
-    irc = None
-    globalchat = None
-    twitch = None
+    protocols = {}
+    plugins = {}
 
 Globals = Globals()

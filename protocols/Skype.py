@@ -1,17 +1,23 @@
 import os
 
-import Skype4Py as skype4py
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
+from gadget import UnsupportedProtocol
 from gadget.globals import Globals
 from gadget.messages import subscribe, handle_message, make_context
 from gadget.plugins import make_deferred
+
+try:
+    import Skype4Py as skype4py
+except ImportError:
+    raise UnsupportedProtocol("Skype4Py is required")
 
 class Skype(object):
     """Skype API handler."""
     
     REATTACH_TIMEOUT = 60*60*1
+    PROTOCOL_NAME = "Skype"
     
     def __init__(self):
         self.skype = None
@@ -105,3 +111,6 @@ class Skype(object):
     
     def is_authed(self, context):
         return any([context.get("skypeHandle") in x[0] for x in Globals.settings.ADMINISTRATORS])
+
+def build_protocol():
+    return Skype()
