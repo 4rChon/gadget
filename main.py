@@ -4,14 +4,11 @@ import os
 import signal
 import traceback
 
-from twisted.internet import protocol, reactor
+from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
-from twisted.cred import portal as Portal, checkers
-from twisted.conch import manhole, manhole_ssh
 
 from gadget.globals import Globals
 from gadget.commands import Commands
-from gadget.messages import send_global
 from gadget.plugins import load_plugins
 from gadget.protocols import load_protocols
 
@@ -29,15 +26,6 @@ def make_replacement(file):
 
 sys.stdout = make_replacement(realStdout)
 sys.stderr = make_replacement(realStderr)
-
-def manhole_factory(globals):
-    realm = manhole_ssh.TerminalRealm()
-    realm.chainedProtocolFactory.protocolFactory = lambda x: manhole.Manhole(globals)
-    portal = Portal.Portal(realm)
-    
-    portal.registerChecker(checkers.InMemoryUsernamePasswordDatabaseDontUse(root=Globals.settings.MANHOLE_PASSWORD))
-    
-    return manhole_ssh.ConchFactory(portal)
 
 def reactor_step():
     """Run every second by the reactor. Handles changes in running/retrySkypeAttach."""
@@ -71,26 +59,6 @@ def get_settings():
     
     return settings
 
-def parse_hostname(string):
-    try:
-        split = string.split(":")
-        split[1] = int(split[1])
-        
-        assert 0 <= split[1] <= 65535
-        return split
-    except IndexError:
-        print "Error in settings:\n'%s' is not a valid hostname:port combination." % (string,)
-        
-        raise SystemExit
-    except ValueError:
-        print "Error in settings:\n%r is not a number." % (split[1],)
-        
-        raise SystemExit
-    except AssertionError:
-        print "Error in settings:\n%d is not a valid port. (try somewhere in 0-65535)" % (split[1],)
-        
-        raise SystemExit
-
 def sighup(signum, frame): #reload
     Globals.running = False
     Globals.restart = True
@@ -119,12 +87,6 @@ def main():
         sys.argv[0] = os.path.abspath(sys.argv[0])
         
         os.execv("/usr/bin/env", ["env", "python"] + sys.argv)
-
-class Echoer(protocol.DatagramProtocol):
-    """Listens for datagrams, and sends them as messages."""
-    
-    def datagramReceived(self, data, (host, port)):
-        send_global(data)
 
 if __name__ == '__main__':
     main()

@@ -2,7 +2,7 @@ import os
 
 from gadget.commands import SubprocessProtocol, register_command
 from gadget.globals import Globals
-from gadget.plugins import require_auth, make_deferred, simple_callback
+from gadget.plugins import require_auth, make_deferred, simple_callback, load_plugins
 from gadget.messages import _incomingSubscribers
 
 @require_auth
@@ -18,6 +18,7 @@ def handle_reload(self, cmd, args, context):
         _incomingSubscribers.append(x)
     
     self.init_commands()
+    load_plugins()
 
 @require_auth
 def handle_restart(self, cmd, args, context):

@@ -8,7 +8,8 @@ from gadget.globals import Globals
 
 class IProtocol(object):
     """Expected interface for a protocol, in addition to build_protocol in the module.
-       You aren't required to subclass this, only to implement all of its methods and members."""
+       You aren't required to subclass this, only to implement all of its methods and members.
+       None of this applies if you are writing a protocol for some other purpose, such as the Echoer or manhole."""
     
     PROTOCOL_NAME = None #display name for the protocol, used in global messages and whatnot
     
@@ -27,12 +28,16 @@ def load_protocols():
     
     modules = chain()
     
-    for iterable in [get_modules_in_directory(dir) for dir in Globals.settings.PROTOCOL_PATHS]:
+    for iterable in ([get_modules_in_package("gadget.default_protocols")] +
+                     [get_modules_in_directory(dir) for dir in Globals.settings.PROTOCOL_PATHS]):
         modules = chain(modules, iterable)
     
     for module in modules:
         if hasattr(module, "build_protocol"):
-            Globals.protocols.update({module.__name__: module.build_protocol()})
+            protocol = module.build_protocol()
+            
+            if protocol:
+                Globals.protocols.update({module.__name__: protocol})
         else:
             print "Warning: protocol %s does not have a build_protocol function" % (module.__name__,)
 
