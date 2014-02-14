@@ -1,12 +1,10 @@
-import importlib
-import traceback
 import random
 from itertools import chain
 from functools import wraps
 
 from twisted.internet.defer import Deferred
 
-from gadget import get_modules_in_package, get_modules_in_directory, AuthenticationError, WaitingForAuthenticationNotice
+from gadget import get_modules_in_package, get_modules_in_directory, AuthenticationError, WaitingForAuthenticationNotice, UnsupportedPlugin
 from gadget.globals import Globals
 
 def load_plugins():
@@ -20,8 +18,13 @@ def load_plugins():
     
     for module in modules:
         if hasattr(module, "initialize"):
-            module.initialize()
-            Globals.plugins.update({module.__name__: module})
+            print "Loading plugin", module.__name__
+            
+            try:
+                module.initialize()
+                Globals.plugins.update({module.__name__: module})
+            except UnsupportedPlugin as e:
+                print "Plugin %s is unsupported: %s" % (module.__name__, e.message)
         else:
             print "Warning: plugin %s does not have an initialize function" % (module.__name__,)
 

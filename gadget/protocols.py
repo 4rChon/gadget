@@ -1,9 +1,8 @@
 import os
 import traceback
-import importlib
 from itertools import chain
 
-from gadget import get_modules_in_package, get_modules_in_directory, get_setting
+from gadget import get_modules_in_package, get_modules_in_directory, get_setting, UnsupportedProtocol
 from gadget.globals import Globals
 
 class IProtocol(object):
@@ -34,10 +33,15 @@ def load_protocols():
     
     for module in modules:
         if hasattr(module, "build_protocol"):
-            protocol = module.build_protocol()
+            print "Loading protocol", module.__name__
             
-            if protocol:
-                Globals.protocols.update({module.__name__: protocol})
+            try:
+                protocol = module.build_protocol()
+                
+                if protocol:
+                    Globals.protocols.update({protocol.PROTOCOL_NAME: protocol})
+            except UnsupportedProtocol as e:
+                print "Protocol %s is unsupported: %s" % (module.__name__, e.message)
         else:
             print "Warning: protocol %s does not have a build_protocol function" % (module.__name__,)
 

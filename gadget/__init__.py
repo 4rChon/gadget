@@ -18,6 +18,8 @@ class WaitingForAuthenticationNotice(Exception):
 
 class UnsupportedException(Exception):
     """Base class for UnsupportedProtocol/UnsupportedPlugin."""
+    
+    pass
 
 class UnsupportedProtocol(UnsupportedException):
     """Raised anywhere in a protocol module to indicate that the protocol cannot be used."""
@@ -59,7 +61,9 @@ def get_setting(key, default=None):
     """Retrieve a setting from gadget_settings.py, or a default if it doesn't exist."""
     
     try:
-        return getattr(Globals.settings, "key")
+        return getattr(Globals.settings, key)
     except:
         if default == Exception:
             raise
+        else:
+            return default
