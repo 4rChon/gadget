@@ -112,6 +112,8 @@ class IRC(protocol.ClientFactory):
                 print "[IRC] Error: don't know how to %s" % (cmd,)
                 
                 return
+        else:
+            body = context.get("body")
         
         for channel in channels:
             func(channel, body)
