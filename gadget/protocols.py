@@ -28,7 +28,7 @@ def load_protocols():
     modules = chain()
     
     for iterable in ([get_modules_in_package("gadget.default_protocols")] +
-                     [get_modules_in_directory(dir) for dir in Globals.settings.PROTOCOL_PATHS]):
+                     [get_modules_in_directory(dir) for dir in get_setting("PROTOCOL_PATHS")]):
         modules = chain(modules, iterable)
     
     for module in modules:

@@ -10,7 +10,7 @@ from cStringIO import StringIO
 from twisted.internet import reactor, protocol
 from twisted.internet.defer import Deferred
 
-from gadget import AuthenticationError, WaitingForAuthenticationNotice
+from gadget import AuthenticationError, WaitingForAuthenticationNotice, get_setting
 from gadget.globals import Globals
 from gadget.messages import subscribe_incoming, send_message
 from gadget.plugins import simple_callback, make_deferred
@@ -99,7 +99,7 @@ class Commands(object):
         if context.get("isEmote"):
             return
         
-        if body.startswith(Globals.settings.COMMAND_PREFIX):
+        if body.startswith(get_setting("COMMAND_PREFIX")):
             cmd, args = parse_args(body)
             
             self.handle_command(cmd, args, context)
@@ -141,7 +141,7 @@ class Commands(object):
         self.scriptPaths = {}
         regex = re.compile(r"commands/([\w\-]+)\.([\w\-]+)$")
         
-        for folder in Globals.settings.COMMAND_PATHS:
+        for folder in get_setting("COMMAND_PATHS"):
             if not os.path.exists(folder):
                 return
             

@@ -4,7 +4,8 @@ from functools import wraps
 
 from twisted.internet.defer import Deferred
 
-from gadget import get_modules_in_package, get_modules_in_directory, AuthenticationError, WaitingForAuthenticationNotice, UnsupportedPlugin
+from gadget import (AuthenticationError, WaitingForAuthenticationNotice, UnsupportedPlugin,
+                    get_modules_in_package, get_modules_in_directory, get_setting)
 from gadget.globals import Globals
 
 def load_plugins():
@@ -13,7 +14,7 @@ def load_plugins():
     modules = chain()
     
     for iterable in ([get_modules_in_package("gadget.default_plugins")] +
-                     [get_modules_in_directory(dir) for dir in Globals.settings.PLUGIN_PATHS]):
+                     [get_modules_in_directory(dir) for dir in get_setting("PLUGIN_PATHS")]):
         modules = chain(modules, iterable)
     
     for module in modules:
@@ -29,7 +30,7 @@ def load_plugins():
             print "Warning: plugin %s does not have an initialize function" % (module.__name__,)
 
 def get_auth_failure_msg():
-    return random.choice(Globals.settings.AUTH_FAILURE_MESSAGES)
+    return random.choice(get_setting("AUTH_FAILURE_MESSAGES"))
 
 def is_authed(context):
     """Check whether a user is authenticated to run priviledged commands."""

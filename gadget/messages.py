@@ -1,3 +1,4 @@
+from gadget import get_setting
 from gadget.globals import Globals
 
 _subscribers = []
@@ -92,7 +93,7 @@ def default_format(context):
 def filter_unicode(str):
     """Removes blacklisted unicode characters, and encodes as UTF-8."""
     
-    for char in Globals.settings.UNICODE_BLACKLIST:
+    for char in get_setting("UNICODE_BLACKLIST"):
         str.replace(char, "")
     
     if type(str) is unicode:

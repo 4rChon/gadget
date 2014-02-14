@@ -57,7 +57,7 @@ def get_modules_in_directory(path):
                 
                 traceback.print_exc()
 
-def get_setting(key, default=None):
+def get_setting(key, default=Exception):
     """Retrieve a setting from gadget_settings.py, or a default if it doesn't exist."""
     
     try:

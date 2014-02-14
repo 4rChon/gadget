@@ -3,7 +3,7 @@ import os
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
-from gadget import UnsupportedProtocol
+from gadget import UnsupportedProtocol, get_setting
 from gadget.globals import Globals
 from gadget.messages import subscribe, handle_message, make_context
 from gadget.plugins import make_deferred
@@ -29,7 +29,7 @@ class Skype(object):
     def make_skype(self):
         self.skype = skype4py.Skype(Transport='x11')
         self.skype.Timeout = 5000
-        self.skype.FriendlyName = Globals.settings.NICKNAME
+        self.skype.FriendlyName = get_setting("NICKNAME")
         self.skype.OnMessageStatus = (lambda msg, status: reactor.callFromThread(self.message_handler, msg, status))
         self.skype.OnAttachmentStatus = (lambda status: reactor.callFromThread(self.attachment_status_handler, status))
     
@@ -110,7 +110,7 @@ class Skype(object):
         reactor.callInThread(send, context)
     
     def is_authed(self, context):
-        return any([context.get("skypeHandle") in x[0] for x in Globals.settings.ADMINISTRATORS])
+        return any([context.get("skypeHandle") in x[0] for x in get_setting("ADMINISTRATORS")])
 
 def build_protocol():
     return Skype()

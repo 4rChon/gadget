@@ -1,10 +1,11 @@
 import random
 
+from gadget import get_setting
 from gadget.globals import Globals
 from gadget.messages import subscribe_incoming, send_message
 
 def translate_sus(name):
-    for k,v in Globals.settings.SUS_TRANSLATIONS.iteritems():
+    for k,v in get_setting("SUS_TRANSLATIONS").iteritems():
         if "," in k:
             k = k.split(",")
             
@@ -20,7 +21,7 @@ def scan(context):
     name = context.get("name")
     body = context.get("body")
     
-    if body in Globals.settings.SUS_MARKERS:
+    if body in get_setting("SUS_MARKERS"):
         tmp = context.copy()
         tmp["body"] = translate_sus(name)
         tmp["isFormatted"] = True

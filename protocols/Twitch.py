@@ -3,6 +3,7 @@ import os
 from twisted.internet import reactor, protocol
 from twisted.words.protocols.irc import IRCClient
 
+from gadget import get_setting
 from gadget.globals import Globals
 
 class TwitchBot(IRCClient):
@@ -14,7 +15,7 @@ class TwitchBot(IRCClient):
         self.password = self.factory.token
     
     def signedOn(self):
-        for channel in Globals.settings.TWITCH_CHANNELS:
+        for channel in get_setting("TWITCH_CHANNELS"):
             self.join(channel)
     
     def noticed(self, user, channel, message):
@@ -32,7 +33,7 @@ class TwitchBot(IRCClient):
             else:
                 pass #Globals.commands.send_message(u"[Twitch] \x02%s\x02\u202d: %s" % (name, message), self)
             
-            if message.startswith(Globals.settings.COMMAND_PREFIX):
+            if message.startswith(get_setting("COMMAND_PREFIX")):
                 cmd, args = Globals.commands.parse_args(message)
                 environ = Globals.commands.get_environment(self.factory, channel)
                 environ["NAME"] = name
