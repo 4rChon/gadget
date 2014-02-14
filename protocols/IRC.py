@@ -3,8 +3,10 @@ import os
 from twisted.internet import reactor, protocol
 from twisted.words.protocols.irc import IRCClient
 
+from gadget import get_setting
 from gadget.globals import Globals
 from gadget.messages import subscribe, default_format, send_global, handle_message, make_context
+from gadget.protocols import have_required_settings, parse_hostname
 
 class IrcBot(IRCClient):
     """IRC protocol manager."""
@@ -121,5 +123,10 @@ class IRC(protocol.ClientFactory):
         context["name"] = "\x02%s\x02" % (context.get("name"),)
         
         return default_format(context)
+
+def build_protocol():
+    if have_required_settings("NICKNAME", "IRC_ADDRESS", "IRC_CHANNELS"):
+        host, port = parse_hostname(get_setting("IRC_ADDRESS"))
+        irc = IRC(get_setting("NICKNAME"), host, port, get_setting("IRC_CHANNELS"))
         
-        
+        return irc
