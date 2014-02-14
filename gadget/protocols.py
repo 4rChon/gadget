@@ -39,7 +39,7 @@ def load_protocols():
                 protocol = module.build_protocol()
                 
                 if protocol:
-                    Globals.protocols.update({protocol.PROTOCOL_NAME: protocol})
+                    Globals.protocols.update({module.__name__: protocol})
             except UnsupportedProtocol as e:
                 print "Protocol %s is unsupported: %s" % (module.__name__, e.message)
         else:
