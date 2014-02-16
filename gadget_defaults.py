@@ -12,8 +12,7 @@ PROTOCOL_PATHS = ["protocols"] #paths to folders with additional protocol module
 ##connection information
 ##a blank address disables the server
 
-IRC_ADDRESS = "localhost:6667"
-IRC_CHANNELS = ["#channel"]
+IRC_CONNECTIONS = {"localhost:6667": ["#channel"]} #dict of networks to connect to, and channels to join on each
 
 GLOBALCHAT_ADDRESS = ""
 
@@ -21,11 +20,11 @@ TWITCH_USERNAME = ""
 TWITCH_OATH_TOKEN = "" #visit http://twitchapps.com/tmi/ to generate this
 TWITCH_CHANNELS = [] #list of channel names to join
 
-ECHOER_BIND_ADDRESS = "0.0.0.0:2345" #sends incoming datagrams as messages
+#ECHOER_BIND_ADDRESS = "0.0.0.0:2345" #sends incoming datagrams as messages
 
 #interpreter over ssh, for debugging
-MANHOLE_BIND_ADDRESS = ""
-MANHOLE_PASSWORD = ""
+#MANHOLE_BIND_ADDRESS = ""
+#MANHOLE_PASSWORD = ""
 
 ##messages
 
