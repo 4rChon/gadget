@@ -1,5 +1,3 @@
-import os
-import traceback
 from itertools import chain
 
 from gadget import get_modules_in_package, get_modules_in_directory, get_setting, UnsupportedProtocol

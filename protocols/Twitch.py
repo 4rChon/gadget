@@ -1,5 +1,3 @@
-import os
-
 from twisted.internet import reactor, protocol
 from twisted.words.protocols.irc import IRCClient
 

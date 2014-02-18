@@ -1,10 +1,7 @@
 import glob
 import os
-import importlib
 import shlex
 import re
-import pkgutil
-import traceback
 from cStringIO import StringIO
 
 from twisted.internet import reactor, protocol

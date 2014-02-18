@@ -4,7 +4,7 @@ from functools import wraps
 
 from twisted.internet.defer import Deferred
 
-from gadget import (AuthenticationError, WaitingForAuthenticationNotice, UnsupportedPlugin,
+from gadget import (WaitingForAuthenticationNotice, UnsupportedPlugin,
                     get_modules_in_package, get_modules_in_directory, get_setting)
 from gadget.globals import Globals
 

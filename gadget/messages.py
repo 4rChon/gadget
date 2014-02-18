@@ -42,31 +42,29 @@ def get_destinations(context):
     globals = {}
     isGlobal = False
     
+    def update_list(name, value, dict=globals):
+        dict[name] = dict.get(name, []) + [value]
+    
     for protocolName, data in _routes.iteritems():
         protocol = Globals.protocols.get(protocolName)
         
         if protocolName == protocol.PROTOCOL_NAME:
-            for destination in data.get("globals"): #determine if the message is global
-                if destination.address == msgSource:
+            for destination in data.get("globals"):
+                if destination.address == msgSource: #determine if the message is global
                     isGlobal = True
-                else:
-                    globals[protocolName] = globals.get(protocolName, []) + [destination]
+                else: #otherwise get this protocol's globals
+                    update_list(protocolName, destination)
             
             for source, destinations in data.get("routes").iteritems(): #get destinations for this source
                 if source == msgSource:
                     for destination in destinations:
-                        if destination.formatter == None:
-                            destination.formatter = default_format
-                        
-                        result[destination.protocol] = result.get(destination.protocol, []) + [destination]
-        else: #get globals for other protocols
-            for source in data.get("globals"):
-                
-                globals[protocolName] = globals.get(protocolName, []) + [source]
+                        update_list(destination.protocol, destination, result)
+        else:
+            for source in data.get("globals"): #get globals for other protocols
+                update_list(protocolName, source)
     
     if isGlobal:
         result.update(globals)
-        context.update({"isGlobal": True})
     else:
         context.update({"isGlobal": False})
     
@@ -87,10 +85,10 @@ def send_message(context, exclude=None):
             context = context.copy()
             context["destination"] = destination.address
             
-            if hasattr(protocol, "format_message"):
-                protocol.format_message(context)
-            
             if not context.get("isFormatted"):
+                if hasattr(protocol, "format_message"):
+                    protocol.format_message(context)
+                
                 destination.formatter(context)
                 
                 context["isFormatted"] = True

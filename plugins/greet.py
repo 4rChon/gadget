@@ -1,7 +1,6 @@
 import random
 
 from gadget import get_setting
-from gadget.globals import Globals
 from gadget.messages import subscribe_incoming, send_message
 
 def translate_sus(name):

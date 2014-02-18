@@ -1,12 +1,8 @@
-import os
-
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
 from gadget import UnsupportedProtocol, get_setting
-from gadget.globals import Globals
 from gadget.messages import subscribe, handle_message, make_context
-from gadget.plugins import make_deferred
 
 try:
     import Skype4Py as skype4py
