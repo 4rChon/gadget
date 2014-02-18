@@ -11,8 +11,9 @@ from gadget.protocols import have_required_settings, parse_hostname
 class IrcBot(IRCClient):
     """IRC protocol manager."""
     
-    def __init__(self, factory, channels):
+    def __init__(self, factory, network, channels):
         self.factory = factory
+        self.network = network
         self.nickname = self.factory.nick
         self.channels = channels
     
@@ -27,10 +28,15 @@ class IrcBot(IRCClient):
         name = user.split("!")[0]
         isGlobal = (channel in self.channels)
         
+        if channel in self.channels:
+            source = channel
+        else:
+            source = '!' + name
+                
         handle_message(
             make_context(
                 protocol=self.factory,
-                source=channel if isGlobal else name,
+                source=self.network + source,
                 name=name,
                 body=message,
                 isEmote=action,
@@ -72,7 +78,7 @@ class IRC(protocol.ClientFactory):
         
         for network in networks:
             host, port = parse_hostname(network)
-            client = IrcBot(self, networks[network])
+            client = IrcBot(self, network, networks[network])
             
             def capture(host, port, client): #hack around python's tricky scoping rules
                 def callback(resolved):
@@ -107,15 +113,25 @@ class IRC(protocol.ClientFactory):
         
         reactor.callLater(16000, lambda: connector.connect())
     
-    def send_message(self, context):
-        client = None #???
-        source = context.get("source")
-        channels = []
+    @staticmethod
+    def parse_destination(context):
+        destination = context.get("destination")
+        isChannel = '#' in destination
         
-        if   source:
-            channels = [source]
-        elif context.get("isGlobal"):
-            channels = client.channels
+        if isChannel:
+            network, channel = destination.split("#")
+            channel = '#' + channel
+        else: #privmsg
+            network, channel = destination.split("!")
+        
+        return isChannel, network, channel
+    
+    def send_message(self, context):
+        isChannel, network, channel = self.parse_destination(context)
+        client = self.clients.get(network, None)
+        
+        if not client:
+            return
         
         split = context.get("body").split(" ")
         cmd = split[0][1:].lower()
@@ -134,8 +150,7 @@ class IRC(protocol.ClientFactory):
         else:
             body = context.get("body")
         
-        for channel in channels:
-            func(channel, body)
+        func(channel, body)
     
     def is_authed(self, context):
         return False #TODO

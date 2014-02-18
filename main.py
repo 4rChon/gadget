@@ -11,6 +11,7 @@ from gadget.globals import Globals
 from gadget.commands import Commands
 from gadget.plugins import load_plugins
 from gadget.protocols import load_protocols
+from gadget.messages import load_routes
 
 realStdout = sys.stdout
 realStderr = sys.stderr
@@ -77,6 +78,7 @@ def main():
     Globals.commands.init_commands()
     load_plugins()
     load_protocols()
+    load_routes()
     
     signal.signal(signal.SIGQUIT, sigquit)
     signal.signal(signal.SIGHUP, sighup)

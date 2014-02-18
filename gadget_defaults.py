@@ -4,6 +4,8 @@ COMMAND_PREFIX = "!"
 ADMINISTRATORS = [ #people with access to commands such as !reload
     ("skype name", "irc mask", "steamid"),
 ]
+ROUTING_FILE = "routes.py" #path to python script that specifies message routes
+                            #(see routing.py.example for more information)
 
 COMMAND_PATHS = ["commands"] #paths to folders with command scripts
 PLUGIN_PATHS = ["plugins"] #paths to folders with additional plugin modules

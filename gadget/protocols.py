@@ -21,6 +21,11 @@ class IProtocol(object):
         """Called by gadget.plugins.is_authed to determine whether a user is authorized to run a priviledged command."""
         
         raise NotImplementedError
+    
+    def format_message(self, context):
+        """Optional method to apply additional formatting to a message (i.e. bolding names)"""
+        
+        pass
 
 def load_protocols():
     """Load all protocols."""

@@ -3,3 +3,4 @@
 *.sublime-*
 data/*
 gadget_settings.py
+routes.py
