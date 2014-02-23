@@ -76,7 +76,6 @@ class Skype(object):
                     body=msg.Body,
                     skypeHandle=msg.FromHandle,
                     isEmote=emote,
-                    isGlobal=(self.accountName not in msg.ChatName),
                 )
             )
     
@@ -88,19 +87,12 @@ class Skype(object):
     
     def send_message(self, context):
         def send(context):
-            source = context.get("source")
-            chats = []
+            chat = self.find_chat(context.get("destination"))
             
-            if   source:
-                chats = [self.find_chat(source)]
-            elif context.get("isGlobal"):
-                chats = [chat for chat in self.skype.Chats if self.accountName not in chat.Name]
-            
-            for chat in chats:
-                try:
-                    chat.SendMessage(context.get("body"))
-                except skype4py.errors.SkypeError:
-                    pass
+            try:
+                chat.SendMessage(context.get("body"))
+            except skype4py.errors.SkypeError:
+                pass
         
         reactor.callInThread(send, context)
     

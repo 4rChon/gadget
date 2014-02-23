@@ -86,10 +86,10 @@ def send_global(body):
     
     context.update({"body": body,
                     "protocol": None,
-                    "isGlobal": True,
                     "isFormatted": True})
     
     for destination in _globals:
+        context.update({"destination": destination.address})
         Globals.protocols.get(destination.protocol).send_message(context)
 
 def handle_message(context):
@@ -110,8 +110,7 @@ def make_context(protocol, source, name, body, **kwargs):
                    "source": source,
                    "name": name,
                    "body": body})
-    result.update({"isGlobal": True, #default values for optional entries
-                   "isEmote": False,
+    result.update({"isEmote": False, #default values for optional entries
                    "isFormatted": False,
                    "destination": {}})
     result.update(kwargs) #everything else
@@ -128,6 +127,7 @@ def format(context, destination):
     if not context.get("isFormatted"):
         destination.formatter(context)
     
+    context["body"] = filter_unicode(context["body"])
     context["isFormatted"] = True
 
 def default_format(context):
