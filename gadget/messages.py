@@ -9,17 +9,20 @@ _routes = None
 _subscribers = []
 _incomingSubscribers = []
 
-class Destination(object):
-    """Container for destination and formatter, used in routing table."""
+class Address(object):
+    """Container for message destination address and related metadata, used in routing table."""
     
-    def __init__(self, protocol, address, formatter=None):
-        self.protocol = protocol
-        self.address = address
+    def __init__(self, protocol, address, formatter=None, **kwargs):
+        self.dict = {
+            "protocol": protocol,
+            "address": address,
+        }
         
-        if not formatter:
-            self.formatter = default_format
-        else:
-            self.formatter = formatter
+        self.dict.update({"formatter": formatter if formatter else default_format})
+        self.dict.update(kwargs)
+    
+    def __getattr__(self, name):
+        return self.dict.get(name, None)
     
     def __repr__(self):
         return "<destination %s_%s at %s>" % (self.protocol, self.address, hex(id(self)))
@@ -69,14 +72,12 @@ def get_destinations(context):
         context.update({"isGlobal": False})
     
     context.get("destination").update(result)
-    
-    return context
 
 def send_message(context, exclude=None):
     """Delivers outgoing messages to protocols."""
     
     if len(context.get("destination", {}).keys()) == 0:
-        context = get_destinations(context)
+        get_destinations(context)
     
     for protocol, destinations in context.get("destination").iteritems():
         protocol = Globals.protocols.get(protocol)
@@ -85,14 +86,7 @@ def send_message(context, exclude=None):
             context = context.copy()
             context["destination"] = destination.address
             
-            if not context.get("isFormatted"):
-                if hasattr(protocol, "format_message"):
-                    protocol.format_message(context)
-                
-                destination.formatter(context)
-                
-                context["isFormatted"] = True
-            
+            format(context, destination)
             protocol.send_message(context)
 
 def send_global(body, exclude=None):
@@ -132,6 +126,18 @@ def make_context(protocol, source, name, body, **kwargs):
     
     return result
 
+def format(context, destination):
+    """Prepare an outgoing message for sending."""
+    
+    if not context.get("isFormatted"):
+        if hasattr(context.get("protocol"), "format_message"):
+            context.get("protocol").format_message(context)
+        
+    if not context.get("isFormatted"):
+        destination.formatter(context)
+    
+    context["isFormatted"] = True
+
 def default_format(context):
     """Performs default formatting of messages."""
     
@@ -140,21 +146,17 @@ def default_format(context):
                            context["body"])
     
     context.update({"body": res, "isFormatted": True})
-    
-    return context
 
 def intraprotocol_formatter(func):
-    """Allows a formatting function to return None, using default_format instead.
+    """Allows a formatting function to return None or False, thus using default_format instead.
        Shortens special formatting functions of intra-protocol global messages."""
     
     @wraps(func)
     def wrapper(context):
         result = func(context)
         
-        if not result:
-            return default_format(context)
-        
-        return result
+        if not result: #func returned None or False
+            default_format(context)
     
     return wrapper
 
@@ -172,43 +174,29 @@ def filter_unicode(str):
 def load_routes():
     global _routes
     
-    file = get_setting("ROUTING_FILE", None)
+    _routes = get_setting("ROUTING_TABLE", {})
     
-    if file:
-        try:
-            module = imp.load_source("routes", file)
-            _routes = module.routingTable
-        except IOError:
-            print "Warning: routes file %s doesn't exist" % (file,)
-        except Exception:
-            print "Exception raised when importing routing file:"
+    #preprocess the table so assumtions can be made in get_destinations
+    for protocolName, data in _routes.items():
+        if Globals.protocols.get(protocolName) == None:
+            _routes.pop(protocolName)
             
-            traceback.print_exc()
+            continue
         
-        #preprocess the table so assumtions can be made in get_destinations
-        for protocolName, data in _routes.items():
-            if Globals.protocols.get(protocolName) == None:
-                _routes.pop(protocolName)
-                
-                continue
-            
-            if data.get("globals") == None:
-                _routes[protocolName]["globals"] = []
-            else:
-                for index, destination in enumerate(data.get("globals")): #convert each global source into a Destination object
-                    _routes[protocolName]["globals"][index] = Destination(protocolName,
-                                                                          destination,
-                                                                          data.get("globalFormatter"))
-            
-            if data.get("routes") == None:
-                _routes[protocolName]["routes"] = {}
-            else:
-                for _, destinations in data.get("routes").items():
-                    for destination in destinations:
-                        if Globals.protocols.get(destination.protocol) == None:
-                            _routes[protocolName]["routes"].remove(destination)
+        if data.get("globals") == None:
+            _routes[protocolName]["globals"] = []
+        else:
+            for index, destination in enumerate(data.get("globals")): #convert each global source into a Address object
+                _routes[protocolName]["globals"][index] = Address(protocolName,
+                                                                  destination,
+                                                                  data.get("globalFormatter"))
+        
+        if data.get("routes") == None:
+            _routes[protocolName]["routes"] = {}
+        else:
+            for _, destinations in data.get("routes").items():
+                for destination in destinations:
+                    if Globals.protocols.get(destination.protocol) == None:
+                        _routes[protocolName]["routes"].remove(destination)
 
-def _send_all_msgs(context):
-    send_message(context)
-
-subscribe_incoming(_send_all_msgs)
+subscribe_incoming(lambda context: send_message(context))

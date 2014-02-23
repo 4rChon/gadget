@@ -153,9 +153,7 @@ class IRC(protocol.ClientFactory):
         return False #TODO
     
     def format_message(self, context):
-        context["name"] = "\x02%s\x02" % (context.get("name"),)
-        
-        return default_format(context)
+        context["name"] = "\x02%s\x02" % (context.get("name"),) #bold names
 
 def build_protocol():
     if have_required_settings("NICKNAME", "IRC_CONNECTIONS"):

@@ -6,7 +6,8 @@ from gadget.globals import Globals
 class IProtocol(object):
     """Expected interface for a protocol, in addition to build_protocol in the module.
        You aren't required to subclass this, only to implement all of its methods and members.
-       None of this applies if you are writing a protocol for some other purpose, such as the Echoer or manhole."""
+       None of this applies if you are writing a protocol that won't be receiving messages,
+        such as the built in Echoer or manhole."""
     
     PROTOCOL_NAME = None #display name for the protocol, used in global messages and whatnot
     
@@ -21,7 +22,7 @@ class IProtocol(object):
         raise NotImplementedError
     
     def format_message(self, context):
-        """Optional method to apply additional formatting to a message (i.e. bolding names)"""
+        """Optional method to apply additional formatting to a message (e.g. bolding names)"""
         
         pass
 
@@ -69,14 +70,8 @@ def parse_hostname(string):
         assert 0 <= split[1] <= 65535
         return split
     except IndexError:
-        print "Error in settings:\n'%s' is not a valid hostname:port combination." % (string,)
-        
-        raise
+        raise ValueError("'%s' is not a valid hostname:port combination." % (string,))
     except ValueError:
-        print "Error in settings:\n%r is not a number." % (split[1],)
-        
-        raise
+        raise ValueError("%r is not a number." % (split[1],))
     except AssertionError:
-        print "Error in settings:\n%d is not a valid port. (try somewhere in 0-65535)" % (split[1],)
-        
-        raise
+        raise ValueError("%d is not a valid port. (try somewhere in 0-65535)" % (split[1],))

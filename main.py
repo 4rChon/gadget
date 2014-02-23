@@ -80,8 +80,12 @@ def main():
     load_protocols()
     load_routes()
     
-    signal.signal(signal.SIGQUIT, sigquit)
-    signal.signal(signal.SIGHUP, sighup)
+    try:
+        signal.signal(signal.SIGQUIT, sigquit)
+        signal.signal(signal.SIGHUP, sighup)
+    except AttributeError: #windows compatability
+        pass
+    
     LoopingCall(reactor_step).start(1)
     reactor.run()
     

@@ -9,7 +9,7 @@ from twisted.internet.defer import Deferred
 
 from gadget import AuthenticationError, WaitingForAuthenticationNotice, get_setting
 from gadget.globals import Globals
-from gadget.messages import subscribe_incoming, send_message, Destination
+from gadget.messages import subscribe_incoming, send_message, Address
 from gadget.plugins import simple_callback, make_deferred
 
 def parse_args(body):
@@ -49,25 +49,32 @@ class SubprocessProtocol(protocol.ProcessProtocol):
         self.deferred.callback(self.buffer.getvalue())
     
     @staticmethod
-    def clean_environ(environ):
-        """Filter non-string items from environ, as reactor.spawnProcess cannot handle them."""
+    def clean_environ(environment):
+        """Filter non-string items from environment, as reactor.spawnProcess cannot handle them."""
         
-        for k, v in environ.items():
+        for k, v in environment.items():
             if type(v) not in [str, unicode]:
-                environ.pop(k)
+                environment.pop(k)
             
             if type(v) is unicode:
-                environ[k] = v.encode("utf-8")
+                environment[k] = v.encode("utf-8")
         
-        return environ
+        return environment
 
 class SendMessageProxy(object):
-    """Wrapper for Messages.send_message that uses the appropriate context."""
+    """Wrapper for gadget.messages.send_message that uses the appropriate context for commands."""
     
     def __init__(self, context):
         self.context = context.copy()
+        protocolName = self.context.get("protocol").PROTOCOL_NAME
+        
+        if self.context.get("destination").get(protocolName) == None:
+            self.context.get("destination")[protocolName] = []
         
         self.context.update({"isFormatted": True})
+        self.context.get("destination")\
+            .get(protocolName)\
+            .append(Address(protocolName, self.context.get("source"))) #send messages from command back to the source
         
     def __getattr__(self, attr):
         if attr == "send_message":
@@ -76,10 +83,7 @@ class SendMessageProxy(object):
             return getattr(Globals.commands, attr)
     
     def send_message(self, msg):
-        protocolName = self.context.get("protocol").PROTOCOL_NAME
-        
         self.context.update({"body": msg})
-        self.context.get("destination").get(protocolName).append(Destination(protocolName, self.context.get("source")))
         send_message(self.context)
 
 class Commands(object):
