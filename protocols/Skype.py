@@ -2,7 +2,7 @@ from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
 from gadget import UnsupportedProtocol, get_setting
-from gadget.messages import subscribe, handle_message, make_context
+from gadget.messages import handle_message, make_context
 
 try:
     import Skype4Py as skype4py
@@ -20,7 +20,6 @@ class Skype(object):
         self.reattacher = LoopingCall(self.reattach)
         
         self.reattacher.start(self.REATTACH_TIMEOUT)
-        subscribe(self)
     
     def make_skype(self):
         self.skype = skype4py.Skype(Transport='x11')

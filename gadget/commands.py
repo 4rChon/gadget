@@ -9,7 +9,7 @@ from twisted.internet.defer import Deferred
 
 from gadget import AuthenticationError, WaitingForAuthenticationNotice, get_setting
 from gadget.globals import Globals
-from gadget.messages import subscribe_incoming, send_message, Address
+from gadget.messages import subscribe, send_message, Address
 from gadget.plugins import simple_callback, make_deferred
 
 def parse_args(body):
@@ -93,7 +93,7 @@ class Commands(object):
         self.handlers = None
         self.scriptPaths = None
         
-        subscribe_incoming(self.handle_incoming)
+        subscribe(self.handle_incoming)
     
     def handle_incoming(self, context):
         """Scan incoming messages for commands."""

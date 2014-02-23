@@ -1,7 +1,7 @@
 import random
 
 from gadget import get_setting
-from gadget.messages import subscribe_incoming, send_message
+from gadget.messages import subscribe, send_message
 
 def translate_sus(name):
     for k,v in get_setting("SUS_TRANSLATIONS").iteritems():
@@ -28,4 +28,4 @@ def scan(context):
         send_message(tmp)
 
 def initialize():
-    subscribe_incoming(scan)
+    subscribe(scan)

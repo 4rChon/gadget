@@ -8,10 +8,9 @@ from gadget import get_setting
 from gadget.globals import Globals
 
 _duplexes = []
-_globals = []
-_routes = {}
+_globals = None
+_routes = None
 _subscribers = []
-_incomingSubscribers = []
 
 class Address(object):
     """Container for message destination address and related metadata, used in routing table."""
@@ -40,15 +39,10 @@ class Address(object):
         
         return (self.protocol == other.protocol) and (self.address == other.address)
 
-def subscribe(protocol):
-    """Register protocol to receive outgoing global messages."""
-    
-    _subscribers.append(protocol)
-
-def subscribe_incoming(func):
+def subscribe(func):
     """Register func to receive incoming messages."""
     
-    _incomingSubscribers.append(func)
+    _subscribers.append(func)
 
 def get_destinations(context):
     """Determine where the given message is supposed to go."""
@@ -69,7 +63,7 @@ def get_destinations(context):
     
     context.get("destination").update(result)
 
-def send_message(context, exclude=None):
+def send_message(context):
     """Delivers outgoing messages to protocols."""
     
     if len(context.get("destination", {}).keys()) == 0:
@@ -85,8 +79,8 @@ def send_message(context, exclude=None):
             format(context, destination)
             protocol.send_message(context)
 
-def send_global(body, exclude=None):
-    """Sends a message to all subscribed protocols."""
+def send_global(body):
+    """Sends a message to all global channels."""
     
     context = {}
     
@@ -94,13 +88,15 @@ def send_global(body, exclude=None):
                     "protocol": None,
                     "isGlobal": True,
                     "isFormatted": True})
-    send_message(context, exclude)
+    
+    for destination in _globals:
+        Globals.protocols.get(destination.protocol).send_message(context)
 
 def handle_message(context):
     """Called by protocols when a message is received."""
     
     try:
-        for callback in _incomingSubscribers:
+        for callback in _subscribers:
             callback(context.copy())
     except StopIteration:
         pass
@@ -179,6 +175,10 @@ def filter_unicode(str):
     return str
 
 def load_routes():
+    global _routes, _globals
+    
+    _routes = {}
+    _globals = []
     table = get_setting("ROUTING_TABLE", {})
     
     #add duplexes
@@ -207,4 +207,4 @@ def load_routes():
                         
                         _routes.get(protocolName).get(addr).append(destination)
 
-subscribe_incoming(lambda context: send_message(context))
+subscribe(lambda context: send_message(context))

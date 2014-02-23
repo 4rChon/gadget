@@ -3,22 +3,23 @@ import os
 from gadget.commands import SubprocessProtocol, register_command
 from gadget.globals import Globals
 from gadget.plugins import require_auth, make_deferred, simple_callback, load_plugins
-from gadget.messages import _incomingSubscribers
+from gadget.messages import _subscribers, load_routes
 
 @require_auth
 def handle_reload(self, cmd, args, context):
     """!reload\nReload the list of commands."""
     
-    essentialSubscribers = _incomingSubscribers[0:2] #_send_all_msgs and Commands.handle_incoming
+    essentialSubscribers = _subscribers[0:2] #_send_all_msgs and Commands.handle_incoming
     
-    for _ in range(len(_incomingSubscribers)):
-        _incomingSubscribers.pop(0)
+    for _ in range(len(_subscribers)):
+        _subscribers.pop(0)
     
     for x in essentialSubscribers:
-        _incomingSubscribers.append(x)
+        _subscribers.append(x)
     
     self.init_commands()
     load_plugins()
+    load_routes()
 
 @require_auth
 def handle_restart(self, cmd, args, context):
