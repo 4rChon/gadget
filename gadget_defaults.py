@@ -7,8 +7,8 @@ ADMINISTRATORS = [ #people with access to commands such as !reload
 
 try:
     from routes import ROUTING_TABLE
-except:
-    print "Warning: unable to import routing table"
+except Exception as e:
+    print "Warning: unable to import routing table (%s)" % (e.message,)
     
     ROUTING_TABLE = {}
 

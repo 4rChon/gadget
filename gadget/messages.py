@@ -2,10 +2,14 @@ import imp
 import traceback
 from functools import wraps
 
+from twisted.internet import reactor
+
 from gadget import get_setting
 from gadget.globals import Globals
 
-_routes = None
+_duplexes = []
+_globals = []
+_routes = {}
 _subscribers = []
 _incomingSubscribers = []
 
@@ -25,7 +29,16 @@ class Address(object):
         return self.dict.get(name, None)
     
     def __repr__(self):
-        return "<destination %s_%s at %s>" % (self.protocol, self.address, hex(id(self)))
+        return "<Address %s_%s at %s>" % (self.protocol, self.address, hex(id(self)))
+    
+    def __hash__(self):
+        return hash((self.protocol, self.address))
+    
+    def __eq__(self, other):
+        if type(other) != type(self):
+            return False
+        
+        return (self.protocol == other.protocol) and (self.address == other.address)
 
 def subscribe(protocol):
     """Register protocol to receive outgoing global messages."""
@@ -38,38 +51,21 @@ def subscribe_incoming(func):
     _incomingSubscribers.append(func)
 
 def get_destinations(context):
-    """Walk the routing table and determine where the given message is supposed to go."""
+    """Determine where the given message is supposed to go."""
     
-    msgSource = context.get("source")
+    protocolName = context.get("protocol").PROTOCOL_NAME
+    source = Address(protocolName, context.get("source"))
     result = {}
-    globals = {}
-    isGlobal = False
     
-    def update_list(name, value, dict=globals):
-        dict[name] = dict.get(name, []) + [value]
-    
-    for protocolName, data in _routes.iteritems():
-        protocol = Globals.protocols.get(protocolName)
-        
-        if protocolName == protocol.PROTOCOL_NAME:
-            for destination in data.get("globals"):
-                if destination.address == msgSource: #determine if the message is global
-                    isGlobal = True
-                else: #otherwise get this protocol's globals
-                    update_list(protocolName, destination)
+    if source in _globals:
+        for dest in _globals:
+            if dest == source:
+                continue
             
-            for source, destinations in data.get("routes").iteritems(): #get destinations for this source
-                if source == msgSource:
-                    for destination in destinations:
-                        update_list(destination.protocol, destination, result)
-        else:
-            for source in data.get("globals"): #get globals for other protocols
-                update_list(protocolName, source)
-    
-    if isGlobal:
-        result.update(globals)
+            result[dest.protocol] = result.get(dest.protocol, []) + [dest]
     else:
-        context.update({"isGlobal": False})
+        for dest in _routes.get(protocolName).get(source, []):
+            result[dest.protocol] = result.get(dest.protocol, []) + [dest]
     
     context.get("destination").update(result)
 
@@ -160,6 +156,17 @@ def intraprotocol_formatter(func):
     
     return wrapper
 
+def duplex(sourceA, sourceB):
+    """Create a mapping in the routing table between two sources."""
+    
+    def callback():
+        routes = get_setting("ROUTING_TABLE")
+        
+        routes.get(sourceA.protocol, {}).get("routes", {}).update({sourceA.address, sourceB})
+        routes.get(sourceB.protocol, {}).get("routes", {}).update({sourceB.address, sourceA})
+    
+    _duplexes.append(callback)
+
 def filter_unicode(str):
     """Removes blacklisted unicode characters, and encodes as UTF-8."""
     
@@ -172,31 +179,32 @@ def filter_unicode(str):
     return str
 
 def load_routes():
-    global _routes
+    table = get_setting("ROUTING_TABLE", {})
     
-    _routes = get_setting("ROUTING_TABLE", {})
+    #add duplexes
+    for func in _duplexes:
+        func()
     
-    #preprocess the table so assumtions can be made in get_destinations
-    for protocolName, data in _routes.items():
-        if Globals.protocols.get(protocolName) == None:
-            _routes.pop(protocolName)
-            
+    #process the routing table, compiling a list of global channels and a dict of explicit routes
+    for protocolName, data in table.items():
+        if Globals.protocols.get(protocolName) == None: #ignore unloaded protocols
             continue
         
-        if data.get("globals") == None:
-            _routes[protocolName]["globals"] = []
-        else:
-            for index, destination in enumerate(data.get("globals")): #convert each global source into a Address object
-                _routes[protocolName]["globals"][index] = Address(protocolName,
-                                                                  destination,
-                                                                  data.get("globalFormatter"))
+        if data.get("globals") != None:
+            for destination in data.get("globals"): #convert each global source into an Address object
+                _globals.append(Address(protocolName, destination, data.get("globalFormatter")))
         
-        if data.get("routes") == None:
-            _routes[protocolName]["routes"] = {}
-        else:
-            for _, destinations in data.get("routes").items():
+        if data.get("routes") != None:
+            _routes[protocolName] = {}
+            
+            for source, destinations in data.get("routes").items():
                 for destination in destinations:
-                    if Globals.protocols.get(destination.protocol) == None:
-                        _routes[protocolName]["routes"].remove(destination)
+                    if Globals.protocols.get(destination.protocol) != None:
+                        addr = Address(protocolName, source)
+                        
+                        if addr not in _routes.get(protocolName):
+                            _routes.get(protocolName).update({addr: []})
+                        
+                        _routes.get(protocolName).get(addr).append(destination)
 
 subscribe_incoming(lambda context: send_message(context))
