@@ -6,11 +6,12 @@ ADMINISTRATORS = [ #people with access to commands such as !reload
 ]
 
 try:
-    from routes import ROUTING_TABLE
+    from routes import GLOBAL_CHANNELS, ROUTES
 except Exception as e:
-    print "Warning: unable to import routing table (%s)" % (e.message,)
+    print "Warning: unable to import message routing data (%s)" % (e.message,)
     
-    ROUTING_TABLE = {}
+    GLOBAL_CHANNELS = []
+    ROUTES = {}
 
 COMMAND_PATHS = ["commands"] #paths to folders with command scripts
 PLUGIN_PATHS = ["plugins"] #paths to folders with additional plugin modules
@@ -34,7 +35,6 @@ TWITCH_CHANNELS = [] #list of channel names to join
 #MANHOLE_PASSWORD = ""
 
 ##messages
-
 AUTH_FAILURE_MESSAGES = [
     "I am a strong black woman who don't need no man",
     "no",
@@ -82,7 +82,6 @@ SUS_TRANSLATIONS = { #greet them in a special way
 }
 
 ##misc
-
 UNICODE_BLACKLIST = [
     '\u202e', #right-to-left control character (thanks, goppend)
 ]
