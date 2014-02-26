@@ -139,9 +139,8 @@ def default_format(context):
     
     context.update({"body": res, "isFormatted": True})
 
-def intraprotocol_formatter(func):
-    """Allows a formatting function to return None or False, thus using default_format instead.
-       Shortens special formatting functions of intra-protocol global messages."""
+def simple_formatter(func):
+    """Allows a formatting function to return None or False, thus using default_format instead."""
     
     @wraps(func)
     def wrapper(context):
@@ -156,10 +155,21 @@ def duplex(sourceA, sourceB):
     """Create a mapping in the routing table between two sources."""
     
     def callback():
-        routes = get_setting("ROUTING_TABLE")
+        """routes = get_setting("ROUTING_TABLE")
         
-        routes.get(sourceA.protocol, {}).get("routes", {}).update({sourceA.address, sourceB})
-        routes.get(sourceB.protocol, {}).get("routes", {}).update({sourceB.address, sourceA})
+        aRoutes = routes.get(sourceA.protocol, {}).get("routes", {})
+        bRoutes = routes.get(sourceB.protocol, {}).get("routes", {})
+        
+        aRoutes.update({sourceA: aRoutes.get(sourceA, []) + [sourceB]})
+        bRoutes.update({sourceB: sourceA})"""
+        
+        _routes[sourceA.protocol] = _routes.get(sourceA.protocol, {}) #ensure the dicts exist
+        _routes[sourceB.protocol] = _routes.get(sourceB.protocol, {})
+        aDict = _routes.get(sourceA.protocol) #shortcuts
+        bDict = _routes.get(sourceB.protocol)
+        
+        _routes.get(sourceA.protocol).update({sourceA: aDict.get(sourceA, []) + [sourceB]})
+        _routes.get(sourceB.protocol).update({sourceB: aDict.get(sourceB, []) + [sourceA]})
     
     _duplexes.append(callback)
 
@@ -181,30 +191,39 @@ def load_routes():
     _globals = []
     table = get_setting("ROUTING_TABLE", {})
     
-    #add duplexes
-    for func in _duplexes:
-        func()
-    
     #process the routing table, compiling a list of global channels and a dict of explicit routes
-    for protocolName, data in table.items():
+    for protocolName, data in table.iteritems():
         if Globals.protocols.get(protocolName) == None: #ignore unloaded protocols
             continue
         
         if data.get("globals") != None:
             for destination in data.get("globals"): #convert each global source into an Address object
-                _globals.append(Address(protocolName, destination, data.get("globalFormatter")))
+                if type(destination) != Address:
+                    addr = Address(protocolName, destination, data.get("globalFormatter"))
+                else:
+                    addr = destination
+                    addr.formatter = addr.formatter if (addr.formatter != default_format) else data.get("globalFormatter")
+                    
+                _globals.append(addr)
         
         if data.get("routes") != None:
             _routes[protocolName] = {}
             
-            for source, destinations in data.get("routes").items():
+            for source, destinations in data.get("routes").iteritems():
                 for destination in destinations:
                     if Globals.protocols.get(destination.protocol) != None:
-                        addr = Address(protocolName, source)
+                        if type(source) != Address:
+                            addr = Address(protocolName, source)
+                        else:
+                            addr = source
                         
                         if addr not in _routes.get(protocolName):
                             _routes.get(protocolName).update({addr: []})
                         
                         _routes.get(protocolName).get(addr).append(destination)
+    
+    #add duplexes
+    for func in _duplexes:
+        func()
 
 subscribe(lambda context: send_message(context))
