@@ -89,6 +89,8 @@ def send_global(body):
                     "isFormatted": True})
     
     for destination in _globals:
+        context = context.copy()
+        
         context.update({"destination": destination.address})
         Globals.protocols.get(destination.protocol).send_message(context)
 
