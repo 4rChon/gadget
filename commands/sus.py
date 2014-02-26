@@ -12,7 +12,7 @@ if len(sys.argv) > 1:
     who = " ".join(sys.argv[1:])
 
 if not who:
-    who = os.environ["NAME"]
+    who = os.environ["name"]
 
 msg = "sus %s" % (who,)
 

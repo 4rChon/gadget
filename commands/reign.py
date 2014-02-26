@@ -5,16 +5,14 @@ import random
 
 chars = string.letters + string.punctuation
 
-sys.stdout.write(random.choice(string.letters)) #no slashes plz
-
 if len(sys.argv) > 1:
     try:
         if len(sys.argv) > 2:
             min = int(sys.argv[1])
             max = int(sys.argv[2])
         else:
-            min = 10
-            max = int(sys.argv[1])
+            min = int(sys.argv[1])
+            max = min + 35
         
         assert min < max
     except:
@@ -24,6 +22,8 @@ if len(sys.argv) > 1:
 else:
     min = 10
     max = 35
+
+sys.stdout.write(random.choice(string.letters)) #no slashes plz
 
 for x in range(0, random.randint(min, max+1)):
     sys.stdout.write(random.choice(chars))
