@@ -1,3 +1,5 @@
+import os
+
 from gadget.plugins import make_deferred
 from gadget.commands import register_command
 
@@ -13,7 +15,13 @@ def handle_help(self, cmd, args, context):
             return make_deferred("No such command.")
         
         if handler == self.run_handler:
-            return make_deferred("I don't know what {0} does.\ntry !{0} help".format(name))
+            path = self.scriptPaths[name] + ".help"
+            
+            if os.path.exists(path):
+                with open(path, "r") as f:
+                    return make_deferred(f.read())
+            else:
+                return make_deferred("I don't know what {0} does.\ntry !{0} help".format(name))
         else:
             if hasattr(handler, "__doc__") and type(handler.__doc__) is str:
                 return make_deferred(handler.__doc__)

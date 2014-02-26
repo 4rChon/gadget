@@ -1,0 +1,2 @@
+!qotd [random|latest|search <query>|id]
+qotd.py interface

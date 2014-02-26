@@ -2,6 +2,7 @@ import glob
 import os
 import shlex
 import re
+import sys
 from cStringIO import StringIO
 
 from twisted.internet import reactor, protocol
@@ -143,30 +144,42 @@ class Commands(object):
         
         self.handlers = {}
         self.scriptPaths = {}
-        regex = re.compile(r"commands/([\w\-]+)\.([\w\-]+)$")
+        regex = re.compile(r"(.*)/([\w\-]+)\.([\w\-]+)$")
         
         for folder in get_setting("COMMAND_PATHS"):
+            folder = os.path.abspath(folder).replace("\\", "/")
+            
             if not os.path.exists(folder):
-                return
+                print "Warning: command folder %s doesn't exist" % (folder,)
+                
+                continue
             
             for file in glob.iglob("%s/*" % (folder,)):
+                file = file.replace("\\", "/")
                 parsed = regex.match(file)
                 
                 if parsed:
                     groups = parsed.groups()
                     
-                    if groups[0] in self.handlers:
-                        print "WARNING: command %s loaded more than once" % (groups[0],)
+                    if groups[1] in self.handlers:
+                        print "WARNING: command %s loaded more than once" % (groups[1],)
                     
-                    self.handlers.update({groups[0]: self.run_handler})
-                    self.scriptPaths.update({groups[0]: "%s.%s" % (groups[0], groups[1])})
+                    self.handlers.update({groups[1]: self.run_handler})
+                    self.scriptPaths.update({groups[1]: "%s/%s.%s" % (groups[0], groups[1], groups[2])})
     
     @staticmethod
     def run_handler(self, cmd, args, context):
         """Runs a handler script."""
         
-        cmdline = ["./commands/%s" % (self.scriptPaths[cmd],)] + args
+        path = self.scriptPaths[cmd]
+        cmdline = [path] + args
         context = context.copy()
+        
+        if sys.platform == "win32":
+            if path.endswith(".py"): #we can at least run python scripts
+                cmdline = [sys.executable] + cmdline
+            else:
+                return make_deferred("I can't run %s (I'm on Windows)" % (cmd,))
         
         context.update(os.environ)
         

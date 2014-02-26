@@ -1,0 +1,3 @@
+!frequencies [format [count]]
+Generate some good frequencies
+Format must contain "%d" which is replaced with a random number
