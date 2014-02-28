@@ -1,7 +1,7 @@
 import random
 
 from gadget import get_setting
-from gadget.messages import subscribe, send_message
+from gadget.messages import subscribe, send_message, get_response_context
 
 def translate_sus(name):
     for k,v in get_setting("SUS_TRANSLATIONS").iteritems():
@@ -21,9 +21,8 @@ def scan(context):
     body = context.get("body")
     
     if body in get_setting("SUS_MARKERS"):
-        tmp = context.copy()
+        tmp = get_response_context(context)
         tmp["body"] = translate_sus(name)
-        tmp["isFormatted"] = True
         
         send_message(tmp)
 

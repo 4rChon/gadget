@@ -79,6 +79,22 @@ def send_message(context):
             format(context, destination)
             protocol.send_message(context)
 
+def get_response_context(context):
+    """Return a context that will send response messages back to the source."""
+    
+    context = context.copy()
+    protocolName = context.get("protocol").PROTOCOL_NAME
+    
+    if context.get("destination").get(protocolName) == None:
+        context.get("destination")[protocolName] = []
+    
+    context.update({"isFormatted": True})
+    context.get("destination")\
+        .get(protocolName)\
+        .append(Address(protocolName, context.get("source")))
+    
+    return context
+
 def send_global(body):
     """Sends a message to all global channels."""
     

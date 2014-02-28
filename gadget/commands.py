@@ -10,7 +10,7 @@ from twisted.internet.defer import Deferred
 
 from gadget import AuthenticationError, WaitingForAuthenticationNotice, get_setting
 from gadget.globals import Globals
-from gadget.messages import subscribe, send_message, Address
+from gadget.messages import subscribe, send_message, Address, get_response_context
 from gadget.plugins import simple_callback, make_deferred
 
 def parse_args(body):
@@ -66,16 +66,7 @@ class SendMessageProxy(object):
     """Wrapper for gadget.messages.send_message that uses the appropriate context for commands."""
     
     def __init__(self, context):
-        self.context = context.copy()
-        protocolName = self.context.get("protocol").PROTOCOL_NAME
-        
-        if self.context.get("destination").get(protocolName) == None:
-            self.context.get("destination")[protocolName] = []
-        
-        self.context.update({"isFormatted": True})
-        self.context.get("destination")\
-            .get(protocolName)\
-            .append(Address(protocolName, self.context.get("source"))) #send messages from command back to the source
+        self.context = get_response_context(context)
         
     def __getattr__(self, attr):
         if attr == "send_message":
