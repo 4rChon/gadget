@@ -35,7 +35,7 @@ TWITCH_CHANNELS = [] #list of channel names to join
 #MANHOLE_PASSWORD = ""
 
 ##messages
-AUTH_FAILURE_MESSAGES = [
+AUTH_FAILURE_MESSAGES = [ #let that dingus know they ain't nobody we listen to
     "I am a strong black woman who don't need no man",
     "no",
     "lol",
@@ -52,8 +52,16 @@ AUTH_FAILURE_MESSAGES = [
     "that's something I cannot allow to happen",
     "you can't get the wood, you know",
     "this mission is too important for me to allow you to jeopardize it",
+    "get your damn hands off my synthesizer",
+    "not without my chapstick",
+    "failed attempts to enter her underwater fortress",
+    "set yourself on fire",
+    "we come in pieces",
+    "wherever you go, there you are",
+    "papers, please",
 ]
-PLS_MESSAGES = [
+PLS_REGEX = r"%s(,|\.+|!+)? +(pls|plz|please|why)" #%s is replaced with nickname
+PLS_MESSAGES = [ #what to say when people are dissatisfied with the behaviour of the bot
     "NO!",
     "it wasn't me",
     "shitty programming?",
@@ -64,7 +72,8 @@ PLS_MESSAGES = [
     "nyet",
     "nein",
 ]
-NAME_MESSAGES = [ #what to say when people say the bot's name
+NAME_REGEX = r"((hi|hello|sus|greetings|yo|hey|sup) +)?%s" #%s is replaced with nickname
+NAME_MESSAGES = [ #what to say when people address the bot
     "sus",
     "beep",
     "boop",
