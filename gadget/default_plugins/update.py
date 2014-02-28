@@ -56,7 +56,7 @@ def handle_pull(self, cmd, args, context):
 def handle_git(self, cmd, args, context):
     """!git <git commands>\nfor fixing 'dem pesky merge conflicts"""
     
-    return SubprocessProtocol(["/usr/bin/git"] + args, os.environ.copy()).deferred
+    return SubprocessProtocol(["/usr/bin/git"] + args, os.environ).deferred
 
 def initialize():
     register_command(handle_reload)

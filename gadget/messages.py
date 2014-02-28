@@ -84,14 +84,15 @@ def get_response_context(context):
     
     context = context.copy()
     protocolName = context.get("protocol").PROTOCOL_NAME
+    addr = Address(protocolName, context.get("source"))
     
     if context.get("destination").get(protocolName) == None:
         context.get("destination")[protocolName] = []
     
     context.update({"isFormatted": True})
-    context.get("destination")\
-        .get(protocolName)\
-        .append(Address(protocolName, context.get("source")))
+    
+    if addr not in context.get("destination").get(protocolName):
+        context.get("destination").get(protocolName).append(addr)
     
     return context
 

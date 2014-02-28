@@ -38,7 +38,7 @@ class SubprocessProtocol(protocol.ProcessProtocol):
         self.deferred = Deferred()
         self.buffer = StringIO()
         
-        reactor.spawnProcess(self, args[0], args, self.clean_environ(environment))
+        reactor.spawnProcess(self, args[0], args, self.clean_environ(environment.copy()))
     
     def outReceived(self, data):
         self.buffer.write(data)
@@ -164,7 +164,6 @@ class Commands(object):
         
         path = self.scriptPaths[cmd]
         cmdline = [path] + args
-        context = context.copy()
         
         if sys.platform == "win32":
             if path.endswith(".py"): #we can at least run python scripts

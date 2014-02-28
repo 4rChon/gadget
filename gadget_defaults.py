@@ -72,7 +72,7 @@ PLS_MESSAGES = [ #what to say when people are dissatisfied with the behaviour of
     "nyet",
     "nein",
 ]
-NAME_REGEX = r"((hi|hello|sus|greetings|yo|hey|sup) +)?%s" #%s is replaced with nickname
+NAME_REGEX = r"((hi|hello|sus|greetings|yo|hey|sup) +)?%s$" #%s is replaced with nickname
 NAME_MESSAGES = [ #what to say when people address the bot
     "sus",
     "beep",
