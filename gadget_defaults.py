@@ -8,7 +8,7 @@ ADMINISTRATORS = [ #people with access to commands such as !reload
 try:
     from routes import GLOBAL_CHANNELS, ROUTES
 except Exception as e:
-    print "Warning: unable to import message routing data (%s)" % (e.message,)
+    print "Warning: unable to import message routing data (%s: %s)" % (e.__class__.__name__, str(e),)
     
     GLOBAL_CHANNELS = []
     ROUTES = {}
@@ -89,6 +89,8 @@ SUS_MARKERS = ["sus", "hi"] #when somebody sends a message consisting only of th
 SUS_TRANSLATIONS = { #greet them in a special way
     "goppend": ["gopsus", "hi goppend", "heil goppend"],
 }
+
+TOPIC_FORMAT = "%s" #format for a topic set by !topic, %s is replaced with the command's arguments
 
 ##misc
 UNICODE_BLACKLIST = [

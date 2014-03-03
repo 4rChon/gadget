@@ -8,8 +8,8 @@ from gadget import get_setting
 from gadget.globals import Globals
 
 _duplexes = []
-_globals = None
-_routes = None
+_globals = []
+_routes = {}
 _subscribers = []
 
 class Address(object):
@@ -194,10 +194,11 @@ def filter_unicode(str):
     return str
 
 def load_routes():
-    global _routes, _globals
+    _routes.clear()
     
-    _routes = {}
-    _globals = []
+    while _globals:
+        _globals.pop()
+    
     globals = get_setting("GLOBAL_CHANNELS")
     table = get_setting("ROUTES")
     
