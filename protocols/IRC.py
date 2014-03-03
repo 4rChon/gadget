@@ -45,22 +45,64 @@ class IrcBot(IRCClient):
         self.privmsg(user, channel, message, True)
     
     def userRenamed(self, old, new):
-        send_global("[IRC] %s changed name to %s" % (old, new), self.factory)
+        for channel in self.channels: #TODO: figure out which channels the user is in
+            handle_message(
+                make_context(
+                    protocol=self.factory,
+                    source=self.network+channel,
+                    name=None,
+                    body="[IRC] %s changed name to %s" % (old, new),
+                    isFormatted=True,
+                )
+            )
     
     def userJoined(self, user, channel):
         if channel in self.channels:
-            send_global("[IRC] %s joined" % (user,), self.factory)
+            handle_message(
+                make_context(
+                    protocol=self.factory,
+                    source=self.network+channel,
+                    name=None,
+                    body="[IRC] <%s> %s joined" % (channel, user,),
+                    isFormatted=True,
+                )
+            )
     
     def userLeft(self, user, channel):
         if channel in self.channels:
-            send_global("[IRC] %s left" % (user,), self.factory)
+            handle_message(
+                make_context(
+                    protocol=self.factory,
+                    source=self.network+channel,
+                    name=None,
+                    body="[IRC] <%s> %s left" % (channel, user,),
+                    isFormatted=True,
+                )
+            )
     
     def userQuit(self, user, reason):
-        send_global("[IRC] %s quit (%s)" % (user, reason), self.factory)
+        for channel in self.channels: #TODO: figure out which channels the user is in
+            handle_message(
+                make_context(
+                    protocol=self.factory,
+                    source=self.network+channel,
+                    name=None,
+                    body="[IRC] %s quit (%s)" % (user, reason),
+                    isFormatted=True,
+                )
+            )
     
     def userKicked(self, user, channel, kicker, reason):
         if channel in self.channels:
-            send_global("[IRC] %s was kicked by %s (%s)" % (user, kicker, reason), self.factory)
+            handle_message(
+                make_context(
+                    protocol=self.factory,
+                    source=self.network+channel,
+                    name=None,
+                    body="[IRC] <%s> %s was kicked by %s (%s)" % (channel, user, kicker, reason),
+                    isFormatted=True,
+                )
+            )
 
 class IRC(protocol.ClientFactory):
     """IRC connection manager."""
