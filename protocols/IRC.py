@@ -179,7 +179,7 @@ class IRC(protocol.ClientFactory):
             if   cmd == "topic":
                func = client.topic
             elif cmd == "me":
-                func = client.action
+                func = client.describe
             else:
                 print "[IRC] Error: don't know how to %s" % (cmd,)
                 
