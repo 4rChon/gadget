@@ -114,11 +114,17 @@ def send_global(body):
 def handle_message(context):
     """Called by protocols when a message is received."""
     
-    try:
-        for callback in _subscribers:
+    send_message(context.copy())
+    
+    for callback in _subscribers:
+        try:
             callback(context.copy())
-    except StopIteration:
-        pass
+        except StopIteration:
+            break
+        except Exception:
+            print "Error when calling subscriber:"
+            
+            traceback.print_exc()
 
 def make_context(protocol, source, name, body, **kwargs):
     """Builds a context dictionary."""
@@ -221,5 +227,3 @@ def load_routes():
     
     for func in _duplexes:
         func()
-
-subscribe(lambda context: send_message(context))
