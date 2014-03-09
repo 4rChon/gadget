@@ -94,5 +94,5 @@ TOPIC_FORMAT = "%s" #format for a topic set by !topic, %s is replaced with the c
 
 ##misc
 UNICODE_BLACKLIST = [
-    '\u202e', #right-to-left control character (thanks, goppend)
+    u'\u202e', #right-to-left control character (thanks, goppend)
 ]

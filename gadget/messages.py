@@ -186,7 +186,10 @@ def filter_unicode(str):
     """Removes blacklisted unicode characters, and encodes as UTF-8."""
     
     for char in get_setting("UNICODE_BLACKLIST"):
-        str.replace(char, "")
+        if type(str) is unicode:
+            str = str.replace(char, "")
+        else:
+            str = str.replace(char.encode("utf-8"), "")
     
     if type(str) is unicode:
         str = str.encode("utf-8")
