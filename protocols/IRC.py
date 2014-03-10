@@ -2,7 +2,7 @@ from twisted.internet import reactor, protocol
 from twisted.words.protocols.irc import IRCClient
 
 from gadget import get_setting
-from gadget.messages import default_format, send_global, handle_message, make_context
+from gadget.messages import handle_message, make_context
 from gadget.protocols import have_required_settings, parse_hostname
 
 class IrcBot(IRCClient):

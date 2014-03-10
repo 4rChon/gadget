@@ -1,8 +1,5 @@
-import imp
 import traceback
 from functools import wraps
-
-from twisted.internet import reactor
 
 from gadget import get_setting
 from gadget.globals import Globals

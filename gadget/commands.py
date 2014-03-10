@@ -10,7 +10,7 @@ from twisted.internet.defer import Deferred
 
 from gadget import AuthenticationError, WaitingForAuthenticationNotice, get_setting
 from gadget.globals import Globals
-from gadget.messages import subscribe, send_message, Address, get_response_context
+from gadget.messages import subscribe, send_message, get_response_context
 from gadget.plugins import simple_callback, make_deferred
 
 def parse_args(body):

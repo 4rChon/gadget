@@ -5,7 +5,6 @@ import signal
 import traceback
 
 from twisted.internet import reactor
-from twisted.internet.task import LoopingCall
 
 from gadget.globals import Globals
 from gadget.commands import Commands
@@ -28,19 +27,6 @@ def make_replacement(file):
 sys.stdout = make_replacement(realStdout)
 sys.stderr = make_replacement(realStderr)
 
-def reactor_step():
-    """Run every second by the reactor. Handles changes in running/retrySkypeAttach."""
-    
-    if Globals.running:
-        if Globals.retrySkypeAttach:
-            Globals.retrySkypeAttach = False
-                            
-            reactor.callInThread(skype.attach)
-    else:
-        print "Reloading..."
-        
-        reactor.stop()
-
 def get_settings():
     try:
         import gadget_settings as settings
@@ -61,11 +47,13 @@ def get_settings():
     return settings
 
 def sighup(signum, frame): #reload
-    Globals.running = False
+    reactor.stop()
+    
     Globals.restart = True
 
 def sigquit(signum, frame): #quit
-    Globals.running = False
+    reactor.stop()
+    
     Globals.restart = False
 
 def main():
@@ -86,7 +74,6 @@ def main():
     except AttributeError: #windows compatability
         pass
     
-    LoopingCall(reactor_step).start(1)
     reactor.run()
     
     if Globals.restart:

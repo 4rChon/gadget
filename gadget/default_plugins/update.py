@@ -1,5 +1,7 @@
 import os
 
+from twisted.internet import reactor
+
 from gadget.commands import SubprocessProtocol, register_command
 from gadget.globals import Globals
 from gadget.plugins import require_auth, make_deferred, simple_callback, load_plugins
@@ -25,8 +27,9 @@ def handle_reload(self, cmd, args, context):
 def handle_restart(self, cmd, args, context):
     """!restart\nRestart me, bro!"""
     
-    Globals.running = False
     Globals.restart = True
+    
+    reactor.callLater(1, reactor.stop)
     
     return make_deferred("yessir")
 
@@ -34,7 +37,7 @@ def handle_restart(self, cmd, args, context):
 def handle_quit(self, cmd, args, context):
     """!quit\nMake me go away!"""
     
-    Globals.running = False
+    reactor.callLater(1, reactor.stop)
     
     return make_deferred("later, bitches")
 

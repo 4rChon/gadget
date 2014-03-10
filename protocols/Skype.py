@@ -29,17 +29,16 @@ class Skype(object):
         self.skype.OnAttachmentStatus = (lambda status: reactor.callFromThread(self.attachment_status_handler, status))
     
     def attach(self):
-        global retrySkypeAttach
-        
         try:
             self.skype.Attach()
+            self.skype.ChangeUserStatus(skype4py.cusOnline)
             
             self.accountName = self.skype.User().Handle
             self.skype.Settings.AutoAway = False
         except skype4py.errors.SkypeAPIError:
             print "[Skype] Failed to attach"
             
-            retrySkypeAttach = True
+            reactor.callLater(self.REATTACH_TIMEOUT, self.attach)
     
     def reattach(self):
         print "[Skype] Reattaching"
@@ -80,10 +79,8 @@ class Skype(object):
             )
     
     def attachment_status_handler(self, status):
-        global retrySkypeAttach
-        
         if status == skype4py.apiAttachAvailable:
-            retrySkypeAttach = True
+            self.attach()
     
     def send_message(self, context):
         def send(context):
