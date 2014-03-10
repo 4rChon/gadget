@@ -187,7 +187,7 @@ class IRC(protocol.ClientFactory):
         else:
             body = context.get("body")
         
-        func(channel, body)
+        func(channel, body.strip())
     
     def is_authed(self, context):
         return False #TODO

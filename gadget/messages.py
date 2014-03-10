@@ -158,9 +158,14 @@ def format(context, destination):
 def default_format(context):
     """Performs default formatting of messages."""
     
-    res = "[%s] %s: %s" % (context["protocol"].PROTOCOL_NAME,
-                           context["name"],
-                           context["body"])
+    if not context.get("isEmote"):
+        res = "[%s] %s: %s" % (context["protocol"].PROTOCOL_NAME,
+                               context["name"],
+                               context["body"])
+    else:
+        res = "[%s] *%s %s*" % (context["protocol"].PROTOCOL_NAME,
+                               context["name"],
+                               context["body"])
     
     context.update({"body": res, "isFormatted": True})
 
