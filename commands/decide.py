@@ -9,5 +9,8 @@ random.seed(time.time())
 if random.choice([True, False]):
     print "yes"
 else:
-    print "no"
+    if random.choice([True, False]):
+        print "only on tuesdays"
+    else:
+        print "no"
 
